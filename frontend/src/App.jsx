@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import AppShell from './components/layout/AppShell';
 import CinematicLanding from './pages/CinematicLanding';
 import RoleLogin from './pages/auth/RoleLogin';
-import { RideProvider, useRide } from './context/RideContext';
-import CaptainDashboard from './pages/CaptainDashboard';
-import Booking from './pages/Booking';
-import Tracking from './pages/Tracking';
+import { RideProvider,useRide } from './context/RideContext';
+const CaptainDashboard=lazy(()=>import('./pages/CaptainDashboard'));
+const Booking=lazy(()=>import('./pages/Booking'));
+const Tracking=lazy(()=>import('./pages/Tracking'));
 import Activity from './pages/Activity';
 import Profile from './pages/Profile';
-import DesignSystemPreview from './pages/DesignSystemPreview';
+const DesignSystemPreview=lazy(()=>import('./pages/DesignSystemPreview'));
 import {SarathiDashboard,SarathiLogin,SarathiProfile,SarathiRegister,SarathiVerification} from './pages/sarathi/SarathiPages';
 import SarathiAdmin from './pages/sarathi/SarathiAdmin';
 const Taxi3DPreview = lazy(() => import('./pages/Taxi3DPreview'));
@@ -49,52 +49,43 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const ApplicationPage = ({children}) => <AppShell>{children}</AppShell>;
-function SarathiRoute({children}){
-  const {auth}=useRide();
-  if(!auth)return <Navigate to="/sarathi/login" replace/>;
-  const role=String(auth.user?.role||'').toLowerCase();
-  if(role!=='driver')return <Navigate to="/book" replace/>;
-  return children;
-}
-function PassengerRoute({children}){
-  const {auth}=useRide();
-  const role=String(auth?.user?.role||'').toLowerCase();
-  if(role==='driver')return <Navigate to="/sarathi/dashboard" replace/>;
-  return children;
+function ApplicationPage({children,role}){
+ const {auth,restoring}=useRide();
+ if(restoring)return <p role="status">Restoring your session…</p>;
+ if(!auth)return <Navigate replace to={role==='driver'?'/login/captain':'/login/passenger'}/>;
+ if(role&&auth.user.role!==role)return <Navigate replace to={auth.user.role==='driver'?'/captain':'/book'}/>;
+ return <AppShell>{children}</AppShell>;
 }
 
 export function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <RideProvider>
-        <ScrollReset />
-        <Suspense fallback={<div role="status" style={{padding:80}}>Loading experience…</div>}>
-          <Routes>
-            <Route path="/" element={<CinematicLanding />} />
-            <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
-            <Route path="/login/captain" element={<RoleLogin role="captain" />} />
-            <Route path="/captain" element={<SarathiRoute><ApplicationPage><CaptainDashboard /></ApplicationPage></SarathiRoute>} />
-            <Route path="/sarathi/login" element={<SarathiLogin/>} />
-            <Route path="/sarathi/register" element={<SarathiRegister/>} />
-            <Route path="/sarathi/dashboard" element={<SarathiRoute><SarathiDashboard/></SarathiRoute>} />
-            <Route path="/sarathi/profile" element={<SarathiRoute><SarathiProfile/></SarathiRoute>} />
-            <Route path="/sarathi/verification" element={<SarathiRoute><SarathiVerification/></SarathiRoute>} />
-            <Route path="/sarathi/admin" element={<SarathiAdmin/>} />
-            <Route path="/book" element={<PassengerRoute><ApplicationPage><Booking /></ApplicationPage></PassengerRoute>} />
-            <Route path="/track" element={<PassengerRoute><ApplicationPage><Tracking /></ApplicationPage></PassengerRoute>} />
-            <Route path="/ride/:rideId" element={<PassengerRoute><ApplicationPage><Tracking /></ApplicationPage></PassengerRoute>} />
-            <Route path="/activity" element={<PassengerRoute><ApplicationPage><Activity /></ApplicationPage></PassengerRoute>} />
-            <Route path="/profile" element={<PassengerRoute><ApplicationPage><Profile /></ApplicationPage></PassengerRoute>} />
-            <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />
-            <Route path="/3d" element={<ApplicationPage><Taxi3DPreview /></ApplicationPage>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
-        </RideProvider>
-      </BrowserRouter>
-    </ErrorBoundary>
+    <ErrorBoundary><BrowserRouter>
+      <RideProvider>
+      <ScrollReset />
+      <Suspense fallback={<div role="status" style={{padding:80}}>Loading experience…</div>}>
+        <Routes>
+          <Route path="/" element={<CinematicLanding />} />
+          <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
+          <Route path="/login/captain" element={<RoleLogin role="captain" />} />
+          <Route path="/captain" element={<ApplicationPage role="driver"><CaptainDashboard /></ApplicationPage>} />
+          <Route path="/sarathi/login" element={<SarathiLogin/>} />
+          <Route path="/sarathi/register" element={<SarathiRegister/>} />
+          <Route path="/sarathi/dashboard" element={<ApplicationPage role="driver"><SarathiDashboard/></ApplicationPage>} />
+          <Route path="/sarathi/profile" element={<ApplicationPage role="driver"><SarathiProfile/></ApplicationPage>} />
+          <Route path="/sarathi/verification" element={<ApplicationPage role="driver"><SarathiVerification/></ApplicationPage>} />
+          <Route path="/sarathi/admin" element={<SarathiAdmin/>} />
+          <Route path="/book" element={<ApplicationPage role="passenger"><Booking /></ApplicationPage>} />
+          <Route path="/track" element={<ApplicationPage role="passenger"><Tracking /></ApplicationPage>} />
+          <Route path="/ride/:rideId" element={<ApplicationPage role="passenger"><Tracking /></ApplicationPage>} />
+          <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
+          <Route path="/profile" element={<ApplicationPage><Profile /></ApplicationPage>} />
+          <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />
+          <Route path="/3d" element={<ApplicationPage><Taxi3DPreview /></ApplicationPage>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </RideProvider>
+    </BrowserRouter></ErrorBoundary>
   );
 }
 

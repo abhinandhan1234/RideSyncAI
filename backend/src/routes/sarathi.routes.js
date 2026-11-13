@@ -21,7 +21,7 @@ function secret(){if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)t
 function auth(req,_res,next){try{const token=/^Bearer (.+)$/i.exec(req.headers.authorization||'')?.[1];req.user=jwt.verify(token,secret());next();}catch{next(fail(401,'UNAUTHORIZED','Valid Bearer token required'));}}
 const role=expected=>(req,_res,next)=>req.user.role===expected?next():next(fail(403,'FORBIDDEN','Role is not authorized'));
 const driverOnly=[auth,role('DRIVER')];
-const driverFor=async userId=>Driver.findOne({userId});
+const driverFor=userId=>Driver.findOne({userId});
 const profileProjection=driver=>({approvalStatus:driver.approvalStatus||'INCOMPLETE',approvalNote:driver.approvalNote||'',availability:driver.status==='AVAILABLE'?'ONLINE':driver.status==='ON_TRIP'?'ON_TRIP':'OFFLINE',activeRideId:driver.activeRideId?String(driver.activeRideId):null,profile:driver.profile||{},verification:driver.verification||{},vehicle:driver.vehicle||{},payment:driver.payment||{},rating:driver.rating??null,completedRides:driver.completedRides||0});
 
 router.post('/register',run(async(req,res)=>{

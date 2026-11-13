@@ -47,3 +47,37 @@ curl -X POST http://localhost:5002/api/demo/rides -H 'Content-Type: application/
 ```
 Use the returned offerId to reject, then the replacement offerId to accept;
 use rideId to start and complete. Poll GET ride for updates.
+
+## Authenticated PS2 booking
+
+Configure PS2_PYTHON to the Python interpreter with the Phase 1 dependencies
+compatible with the canonical joblib artifact (scikit-learn 1.9.0). Development
+also discovers ai-engine/validation/.venv automatically. Models and OSM graph
+are read locally; inference does not train models.
+
+GET /api/predictions/demand (admin) takes zoneCode or zoneId and from/to ISO
+timestamps with offsets. Slots are local Belagavi hours, up to 24. GET
+/api/predictions/history returns the specified zone's held-out historical rows.
+GET /api/zones/surge returns simulated forecasts, available supply, required
+supply, multiplier (surge) and proposed moves. No moves are performed.
+
+GET /api/routes/compare takes originLng, originLat, destLng, destLat and
+vehicleType. ESTIMATE_ONLY results have null geometry. POST /api/rides uses the
+selected route and multiplies (40 INR + 12/km + 2/rounded-up minute) by the
+vehicle/capacity-specific zone surge. Forecast failure uses 1.0. Road travel
+time and fuel are estimates. Forecasts are synthetic.
+
+PS2_DISPATCH_POLICY accepts constrained (default), nearest, eta or weighted.
+PS2_ETA_PENALTY_MINUTES defaults to 1. Accepted offers have a deadline equal
+to their pickup ETA plus ARRIVAL_GRACE_MINUTES (default 5). Only ACCEPTED
+rides can be reassigned for lateness. Authenticated riders can inspect the
+selection factors via GET /api/rides/:rideId.
+
+Two poolingOptIn bookings can share a ride ID when the first offer is pending,
+the reserved driver has capacity and both journeys are covered by the road
+network. The graph plan must retain the offered first pickup and satisfy a 25%
+in-vehicle detour limit. One document stores membership, stops, separate and
+pooled estimates and both surge-adjusted fares. Both passengers share the
+lifecycle; cancellation by either cancels the whole booking. POST /api/pools/find
+with rideId returns an existing booked pool. Join the authenticated ride room
+for status events. The ride history contains the total and poolPlan.fares.

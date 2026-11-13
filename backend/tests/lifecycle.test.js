@@ -98,6 +98,43 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal((await RideOffer.findById(expiringOffer._id)).status,'EXPIRED');
   assert.ok(await RideOffer.exists({rideId:expiring.data.rideId,attempt:2}));
   await request(`/api/rides/${expiring.data.rideId}/cancel`,'POST',{},passenger);
+  const friend=(await request('/api/auth/register','POST',{name:'Pool Passenger',email:`pool-${tag}@example.invalid`,password})).data.accessToken;
+  const admin=(await import('jsonwebtoken')).default.sign({sub:'test-admin',role:'ADMIN'},process.env.JWT_SECRET);
+  const query='zoneCode=Z01&from=2026-11-13T09:00:00%2B05:30';
+  const forecast=await request('/api/predictions/demand?'+query,'GET',undefined,admin);
+  assert.equal(forecast.data.predictions[0].predictedCount,17.902);
+  assert.equal((await request('/api/predictions/demand?zoneCode=DEMO-Z1','GET',undefined,admin)).status,400);
+  const history=await request('/api/predictions/history?zoneCode=Z01','GET',undefined,admin);
+  assert.equal(history.data.history.length,168);
+  const intelligence=await request('/api/zones/surge?'+query,'GET',undefined,passenger);
+  assert.equal(intelligence.data.zones[0].available,2);
+  const compare=await request('/api/routes/compare?originLng=74.5&originLat=15.85&destLng=74.501&destLat=15.851','GET',undefined,passenger);
+  assert.equal(compare.data.routes.eco.geometry.type,'LineString');
+  const shared={...payload,dropoff:point(74.501,15.851),poolingOptIn:true};
+  const initial=await request('/api/rides','POST',shared,passenger);
+  const sharedId=initial.data.rideId;
+  const offer=await wait(()=>RideOffer.findOne({rideId:sharedId,status:'PENDING'}));
+  const paired=await request('/api/rides','POST',shared,friend);
+  assert.equal(paired.data.rideId,sharedId);
+  assert.equal(paired.data.pool.feasible,true);
+  const tokens=new Map([[drivers[0].id,a],[drivers[1].id,b]]);
+  assert.equal((await request(`/api/offers/${offer.id}/respond`,'POST',{action:'accept'},tokens.get(String(offer.driverId)))).status,200);
+  await Ride.updateOne({_id:sharedId},{$set:{arrivalDeadline:new Date(Date.now()-1000)}});
+  await expireOffers(io);
+  await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ARRIVAL_DELAY')));
+  const replacement=await wait(()=>RideOffer.findOne({rideId:sharedId,attempt:2}));
+  assert.notEqual(String(replacement.driverId),String(offer.driverId));
+  const token=tokens.get(String(replacement.driverId));
+  assert.equal((await request(`/api/offers/${replacement.id}/respond`,'POST',{action:'accept'},token)).status,200);
+  for(const status of ['ARRIVING','ONGOING','COMPLETED'])
+    assert.equal((await request(`/api/rides/${sharedId}/status`,'PATCH',{status},token)).status,200);
+  const snapshot=await request(`/api/rides/${sharedId}`,'GET',undefined,friend);
+  assert.equal(snapshot.data.status,'COMPLETED');
+  assert.equal(snapshot.data.fareEstimate,paired.data.fareEstimate);
+  assert.ok((await request('/api/rides/history','GET',undefined,friend)).data.rides.some(r=>r._id===sharedId));
+  console.log('PS2 verified',JSON.stringify({forecast:forecast.data.predictions[0],history:history.data.history[0],
+    zone:intelligence.data.zones[0],ecoKm:compare.data.routes.eco.distanceKm,pool:paired.data.pool.pooled,
+    selection:snapshot.data.selection,status:snapshot.data.status}));
   await Driver.updateMany({_id:{$in:drivers.map(d=>d._id)}},{$set:{status:'OFFLINE',activeRideId:null}});
   await Driver.updateOne({_id:drivers[0]._id},{$set:{status:'AVAILABLE'}});
   const other=await request('/api/auth/register','POST',{name:'Second Passenger',email:`second-${tag}@example.invalid`,password});

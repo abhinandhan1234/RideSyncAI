@@ -1,0 +1,66 @@
+[
+  {
+    "zone_id": "Z01",
+    "zone_name": "Railway Station",
+    "centroid_lat": 15.85,
+    "centroid_lon": 74.507,
+    "zone_type": "transport",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z02",
+    "zone_name": "Central Bus Stand",
+    "centroid_lat": 15.86,
+    "centroid_lon": 74.51,
+    "zone_type": "transport",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z03",
+    "zone_name": "Tilakwadi",
+    "centroid_lat": 15.836,
+    "centroid_lon": 74.507,
+    "zone_type": "residential",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z04",
+    "zone_name": "Udyambag",
+    "centroid_lat": 15.816,
+    "centroid_lon": 74.505,
+    "zone_type": "industrial",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z05",
+    "zone_name": "Nehru Nagar / KLE",
+    "centroid_lat": 15.887,
+    "centroid_lon": 74.516,
+    "zone_type": "healthcare",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z06",
+    "zone_name": "Shahapur",
+    "centroid_lat": 15.839,
+    "centroid_lon": 74.52,
+    "zone_type": "commercial",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z07",
+    "zone_name": "Camp",
+    "centroid_lat": 15.852,
+    "centroid_lon": 74.493,
+    "zone_type": "mixed",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  },
+  {
+    "zone_id": "Z08",
+    "zone_name": "Machhe / VTU",
+    "centroid_lat": 15.812,
+    "centroid_lon": 74.472,
+    "zone_type": "education",
+    "source": "SIMULATED_APPROXIMATE_CENTROID"
+  }
+]

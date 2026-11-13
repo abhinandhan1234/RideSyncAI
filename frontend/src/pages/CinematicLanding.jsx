@@ -39,7 +39,7 @@ export default function CinematicLanding(){
       </section>
       <section className="cinema-chapter" id="dispatch" aria-labelledby="dispatch-title"><div className="chapter-copy">
         <p className="cinema-eyebrow">01 / EcoDispatch</p><h2 id="dispatch-title">Less wasted<br/>distance.<br/><em>Better journeys.</em></h2>
-        <p className="cinema-description">Intelligent driver allocation considers pickup time, distance and estimated fuel consumption.</p>
+        <p className="cinema-description">Sarathi allocation considers pickup time, distance and estimated fuel consumption.</p>
         <div className="editorial-rule"><span>Closer pickups</span><span>Thoughtful allocation</span><span>More purposeful miles</span></div>
         <p className="cinema-note">Fuel-aware allocation is a product concept. The current demo ranks distance, availability, acceptance and idle time.</p>
       </div></section>

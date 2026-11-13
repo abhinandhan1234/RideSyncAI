@@ -17,6 +17,7 @@ function CoordinateFields({label,value,onChange,disabled}){
 
 export default function Booking(){
   const state=useRide(),navigate=useNavigate();const [selection,setSelection]=useState('pickup'),[locationError,setLocationError]=useState(''),[locating,setLocating]=useState(false),[advanced,setAdvanced]=useState(false);
+  const [sheetOpen,setSheetOpen]=useState(true);
   async function reverse(at){
     try{const result=await apiRequest(`/locations/reverse?lat=${at.lat}&lon=${at.lng}`);return {...at,name:result.location.name,address:result.location.address};}
     catch{return {...at,name:`Map pin ${at.lat.toFixed(5)}, ${at.lng.toFixed(5)}`,address:'Selected from the map'};}
@@ -42,18 +43,18 @@ export default function Booking(){
       <div className="map-toolbar"><div className="ride-segment" aria-label="Map location selection">{['pickup','dropoff'].map(kind=><button key={kind} disabled={state.locked} aria-pressed={selection===kind} onClick={()=>setSelection(kind)}><MapPin size={14}/>{kind==='pickup'?'Choose pickup':'Choose drop-off'}</button>)}</div><p className="map-caption">Tap the map to set the selected location.</p></div>
       <RideMap {...state} selection={selection} onChoose={choose} simulation={state.mode==='simulation'?state.simulation:null}/>
       {locationError&&<p role="alert" className="ride-error">{locationError}</p>}
-    </div><GlassPanel className="booking-panel"><p className="page-eyebrow">JOURNEY DETAILS</p><h2>Your cab, your way.</h2>
+    </div><GlassPanel className="booking-panel"><button type="button" className="booking-sheet-toggle" aria-controls="booking-details" aria-expanded={sheetOpen} onClick={()=>setSheetOpen(!sheetOpen)}>{sheetOpen?'Hide journey details':'Show journey details'}</button><div id="booking-details" className={sheetOpen?'':'sheet-collapsed'}><p className="page-eyebrow">JOURNEY DETAILS</p><h2>Your cab, your way.</h2>
       {state.mode==='backend'&&<label className="booking-label">Booking option<select disabled={state.locked} value={state.bookingMode} onChange={e=>state.setBookingMode(e.target.value)}><option value="INDIVIDUAL">Individual</option><option value="POOLING">Pooling</option></select></label>}
       {state.bookingMode==='POOLING'&&<div role="status">{state.quoting?'Checking shared routes…':state.quote?.error|| (state.quote?.rideId?
         <>Your share ₹{state.quote.fareEstimate}. Pickup in {state.quote.pool.pooled.passengers[1].waitMinutes.toFixed(1)} min · Detour {state.quote.pool.pooled.passengers[1].detourMinutes.toFixed(1)} min. Estimated shared-route fuel reduction {state.quote.pool.pooled.fuelLitresReductionPercent.toFixed(1)}%, distance reduction {state.quote.pool.pooled.distanceKmReductionPercent.toFixed(1)}%.</>:
         'No compatible pool quoted. You can request a cab and allow a compatible Yatri to join.')}</div>}
       {state.mode==='backend'&&state.intelligence&&<details><summary>Demand, simulated surge and repositioning</summary>{state.intelligence.zones.map(z=><p key={z.zone}>{z.zone}: {z.demand} forecast requests (synthetic model) · {z.available} available · {z.surge}×</p>)}{state.intelligence.reposition.map(m=><p key={m.origin+m.target}>{m.origin} → {m.target}: {m.drivers} recommended</p>)}</details>}
       <label className="booking-label">Route preference<select value={state.routeType} disabled={state.locked} onChange={e=>state.setRouteType(e.target.value)}><option value="shortest">Shortest</option><option value="fastest">Fastest</option><option value="eco">Eco</option></select></label>
-      <label className="booking-label">Yatris<select value={state.passengerCount} disabled={state.locked} onChange={e=>state.setPassengerCount(Number(e.target.value))}>{[1,2,3,4].map(n=><option key={n} value={n}>{n} {n===1?'passenger':'passengers'}</option>)}</select></label>
+      <label className="booking-label">Yatris<select value={state.passengerCount} disabled={state.locked} onChange={e=>state.setPassengerCount(Number(e.target.value))}>{[1,2,3,4].map(n=><option key={n} value={n}>{n} {n===1?'Yatri':'Yatris'}</option>)}</select></label>
       {state.routeLoading&&<p role="status" className="booking-explainer">Finding a road route…</p>}{state.routeError&&<p role="alert" className="ride-error">{state.routeError}</p>}
       {state.route&&<div className="route-summary"><div><span>Pickup</span><strong>{state.pickup?.name||'—'}</strong></div><div><span>Drop-off</span><strong>{state.dropoff?.name||'—'}</strong></div><div><span>Distance</span><strong>{state.route.km.toFixed(2)} km</strong></div><div><span>Estimated duration</span><strong>{Math.ceil(state.route.minutes)} min</strong></div><div><span>Estimated fare</span><strong>₹{(40+12*state.route.km+2*Math.ceil(state.route.minutes)).toFixed(2)}</strong></div><p>{state.route.source==='ESTIMATE_ONLY'?'Estimate only. Road coverage unavailable.':state.mode==='simulation'?'OSRM road estimate.':'Road-network estimate. Surge is applied at booking.'}</p></div>}
       {state.error&&<p role="alert" className="ride-error">{state.error}</p>}
       {pending?<><p role="status" className="booking-explainer">{state.mode==='simulation'?`Simulation: ${state.simulation.phase}`:`Ride status: ${state.ride.status}`}</p><GlassButton variant="primary" fullWidth onClick={()=>navigate(state.mode==='simulation'?'/track':`/ride/${state.ride.rideId}`)}>View tracking</GlassButton></>:<GlassButton variant="primary" fullWidth disabled={!canBook||state.quoting||Boolean(state.quote?.error)||(state.mode==='backend'&&state.auth?.user.role!=='passenger')} loading={state.busy} onClick={async()=>{const booked=await state.book();if(booked)navigate(state.mode==='backend'?`/ride/${booked.rideId}`:'/track');}}>{state.mode==='simulation'?'Start demo ride':state.quote?.rideId?'Join pool':'Book Your Ride'}</GlassButton>}
-    </GlassPanel></div>
+    </div></GlassPanel></div>
   </section>;
 }

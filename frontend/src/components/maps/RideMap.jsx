@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { vehicleIcon } from './vehicleIcon';
 import 'leaflet/dist/leaflet.css';
 import { BELAGAVI, routePoint } from '../../services/ride-utils';
 
-export default function RideMap({pickup,dropoff,route,onChoose,selection='pickup',locked=false,simulation,driverLocation}){
+export default function RideMap({pickup,dropoff,route,onChoose,selection='pickup',locked=false,simulation,driverLocation,vehicleType='cab',gps=false}){
   const element=useRef(),map=useRef(),choose=useRef({onChoose,selection,locked});
   useEffect(()=>{choose.current={onChoose,selection,locked};},[onChoose,selection,locked]);
   const [tileError,setTileError]=useState(false),[driverRoute,setDriverRoute]=useState([]);
@@ -19,11 +20,39 @@ export default function RideMap({pickup,dropoff,route,onChoose,selection='pickup
     if(!map.current)return;
     const layer=L.layerGroup().addTo(map.current);
     const marker=(at,color,label)=>{if(at)L.circleMarker([at.lat,at.lng],{radius:9,weight:3,color:'#F2F3EF',fillColor:color,fillOpacity:1}).bindTooltip(label).addTo(layer);};
-    marker(pickup,'#477781',pickup?.name||'Pickup');marker(dropoff,'#111C21',dropoff?.name||'Drop-off');marker(driverLocation,'#D59A54','Driver location');
+    marker(pickup,'#477781',pickup?.name||'Pickup');marker(dropoff,'#111C21',dropoff?.name||'Drop-off');
     if(route?.points?.length){const line=L.polyline(route.points.map(p=>[p.lat,p.lng]),{color:'#477781',weight:5}).addTo(layer);map.current.fitBounds(line.getBounds(),{padding:[35,35],animate:false});}
     else if(pickup)map.current.panTo([pickup.lat,pickup.lng],{animate:false});
     return()=>layer.remove();
-  },[pickup,dropoff,route,driverLocation]);
+  },[pickup,dropoff,route]);
+  const vehicle=useRef(null);
+  const lat=driverLocation?.lat,lng=driverLocation?.lng;
+  useEffect(()=>{
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)||!map.current)return;
+    const marker=L.marker([lat,lng],{icon:vehicleIcon(vehicleType),title:'Sarathi vehicle'})
+      .bindTooltip(gps?'Last reported GPS position':'Stored vehicle position').addTo(map.current);
+    vehicle.current=marker;
+    return ()=>{marker.remove();vehicle.current=null;};
+  },[vehicleType,gps,Number.isFinite(lat)&&Number.isFinite(lng)]);
+  useEffect(()=>{
+    const marker=vehicle.current;
+    if(!marker)return;
+    const from=marker.getLatLng();
+    if(from.lat===lat&&from.lng===lng)return;
+    if(!gps){marker.setLatLng([lat,lng]);return;}
+    const angle=Math.atan2((lng-from.lng)*Math.cos(lat*Math.PI/180),lat-from.lat)*180/Math.PI;
+    marker.getElement().querySelector('svg').style.transform='rotate('+angle+'deg)';
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){marker.setLatLng([lat,lng]);return;}
+    let frame;
+    const start=performance.now();
+    function move(now){
+      const t=Math.min(1,(now-start)/350);
+      marker.setLatLng([from.lat+(lat-from.lat)*t,from.lng+(lng-from.lng)*t]);
+      if(t<1)frame=requestAnimationFrame(move);
+    }
+    frame=requestAnimationFrame(move);
+    return ()=>cancelAnimationFrame(frame);
+  },[lat,lng,gps,vehicleType]);
   useEffect(()=>{
     if(!driverLocation||!pickup)return;
     const controller=new AbortController();
@@ -36,7 +65,7 @@ export default function RideMap({pickup,dropoff,route,onChoose,selection='pickup
   },[driverLocation?.lat,driverLocation?.lng,pickup?.lat,pickup?.lng]);
   useEffect(()=>{
     if(!map.current||driverRoute.length<2)return;
-    const line=L.polyline(driverRoute,{color:'#D59A54',weight:4,dashArray:'7 8',opacity:.9}).bindTooltip('Driver to pickup route').addTo(map.current);
+    const line=L.polyline(driverRoute,{color:'#D59A54',weight:4,dashArray:'7 8',opacity:.9}).bindTooltip('Sarathi to pickup route').addTo(map.current);
     return()=>line.remove();
   },[driverRoute]);
   useEffect(()=>{

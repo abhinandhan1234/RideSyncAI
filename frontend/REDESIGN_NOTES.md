@@ -2,9 +2,10 @@
 
 ## Current cleanup status
 
-The standalone 3D vehicle preview, Three.js scene and model assets, and Design
-System demo have since been removed. The landing page retains its SVG taxi
-illustration. Driver-facing sign-in and registration use `/sarathi/login` and
+The standalone Admin 3D vehicle inspection page and Design System demo remain
+removed. The public landing page uses the recovered original, lazy-loaded Three.js
+and React Three Fiber scene with the Honda taxi model across Explore and How it
+works; the SVG taxi remains its fallback. Driver-facing sign-in and registration use `/sarathi/login` and
 `/sarathi/register`; the former Captain login entry point is no longer registered.
 The historical notes below describe earlier iterations, not current routes.
 

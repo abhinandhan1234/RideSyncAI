@@ -1,19 +1,30 @@
 import Arrow from '../components/cinematic/Arrow';
-import { useRef, useState } from 'react';
+import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicNav from '../components/cinematic/PublicNav';
 import TaxiIllustration from '../components/cinematic/TaxiIllustration';
-import { useScrollDirector } from '../components/cinematic/ScrollDirector';
+import { useReducedMotion, useScrollDirector } from '../components/cinematic/ScrollDirector';
 import '../components/cinematic/cinematic.css';
+const Scene = lazy(()=>import('../components/cinematic/CinematicScene'));
+class SceneBoundary extends Component {
+  state={failed:false};
+  static getDerivedStateFromError(){ return {failed:true}; }
+  render(){ return this.state.failed ? <TaxiIllustration/> : this.props.children; }
+}
 const chapters=['The arrival','Every kilometre matters','The smarter route','The city moves with you','Your journey starts here'];
+function webglAvailable(){try{const canvas=document.createElement('canvas');const gl=canvas.getContext('webgl2');if(!gl)return false;gl.getExtension('WEBGL_lose_context')?.loseContext();return true;}catch{return false;}}
 export default function CinematicLanding(){
-  const root=useRef(); const {chapter}=useScrollDirector(root);
+  const root=useRef(); const {director,chapter}=useScrollDirector(root); const reduced=useReducedMotion();
+  const [webgl,setWebgl]=useState(false),[visible,setVisible]=useState(true),[failed,setFailed]=useState(false);
   const [route,setRoute]=useState('Eco');
+  useEffect(()=>{setWebgl(webglAvailable());const update=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   return <div className="cinematic" ref={root} data-chapter={chapter}>
     <a className="cinema-skip" href="#arrival">Skip to journey options</a>
     <PublicNav/>
     <div className="cinema-stage" aria-hidden="true">
-      <TaxiIllustration/>
+      <span className="stage-orbit"/>
+      <SceneBoundary>{webgl&&!reduced&&!failed&&visible ? <Suspense fallback={<TaxiIllustration/>}><Scene director={director} onFailure={()=>setFailed(true)}/></Suspense> : <TaxiIllustration/>}</SceneBoundary>
+      <span className="stage-caption">INTELLIMARG / CITY EDITION <i>01</i></span>
     </div>
     <main>
       <section className="cinema-chapter cinema-hero" id="explore" aria-labelledby="hero-title">
@@ -58,3 +69,4 @@ export default function CinematicLanding(){
     <aside className="chapter-indicator" aria-label="Story chapters"><span>0{chapter+1}</span><div>{chapters.map((name,i)=><a href={`#${['explore','dispatch','routes','city','arrival'][i]}`} key={name} className={i===chapter?'active':''} aria-label={name} aria-current={i===chapter?'step':undefined}/>)}</div><span>05</span></aside>
   </div>;
 }
+

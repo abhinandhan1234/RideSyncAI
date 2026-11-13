@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {haversineKm,scoreDriver,hungarian,poolingCompatible,surgeMultiplier} from '../src/services/algorithms.js';
+const P=(x,y)=>({type:'Point',coordinates:[x,y]});
+assert.equal(Math.round(haversineKm(P(74.49,15.85),P(74.49,15.85))),0);
+assert.ok(haversineKm(P(74.49,15.85),P(74.50,15.85))>1);
+const driver={location:P(74.49,15.85),idleSince:new Date(Date.now()-3600000),acceptanceRate:.8,completedRides:25};
+const ride={pickup:P(74.50,15.85),dropoff:P(74.51,15.87)};
+assert.ok(scoreDriver(driver,ride).score>=0&&scoreDriver(driver,ride).score<=1);
+assert.deepEqual(hungarian([[0.1,0.9],[0.9,0.2]]),[{row:0,col:0},{row:1,col:1}]);
+assert.equal(poolingCompatible({...ride,passengerCount:1},{...ride,passengerCount:1}).compatible,true);
+assert.equal(surgeMultiplier(10,2).multiplier,1.6);
+console.log('Algorithm unit tests passed');

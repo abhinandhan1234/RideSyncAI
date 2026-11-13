@@ -1,0 +1,26 @@
+{
+  "name": "ridesync-belagavi-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "import:starter": "node scripts/import-starter.js",
+    "validate:data": "node scripts/validate-data.js",
+    "check": "node --check src/app.js && node --check src/models.js && node --check src/services/dispatch.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.10.0",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -5,6 +5,7 @@ import CinematicLanding from './pages/CinematicLanding';
 import RoleLogin from './pages/auth/RoleLogin';
 import { RideProvider } from './context/RideContext';
 import CaptainDashboard from './pages/CaptainDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Booking from './pages/Booking';
 import Tracking from './pages/Tracking';
 import Activity from './pages/Activity';
@@ -34,7 +35,9 @@ export function App() {
           <Route path="/" element={<CinematicLanding />} />
           <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
           <Route path="/login/captain" element={<RoleLogin role="captain" />} />
+          <Route path="/login/admin" element={<RoleLogin role="admin" />} />
           <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
+          <Route path="/admin" element={<ApplicationPage><AdminDashboard /></ApplicationPage>} />
           <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
           <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
           <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />

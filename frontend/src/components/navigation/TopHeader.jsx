@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Sparkles, Box } from 'lucide-react';
+import { MapPin, Sparkles, Box, ShieldCheck } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
@@ -47,6 +47,22 @@ export const TopHeader = ({ className = '' }) => {
 
         {/* Live Status Badge & Quick Role/Pill Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Admin Dashboard */}
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all select-none',
+              location.pathname === '/admin'
+                ? 'bg-accent/20 border border-accent/40 text-accent shadow-accent-pill'
+                : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-text-secondary hover:text-text-primary'
+            )}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-accent" />
+            <span className="hidden sm:inline">Admin</span>
+            <span className="sm:hidden">Ops</span>
+          </button>
+
           {/* 3D Taxi Direct Switch */}
           <button
             type="button"

@@ -1,5 +1,13 @@
 > Historical cinematic redesign notes. Later auth, booking and map integration supersedes integration-pending statements below; see `../docs/INTEGRATION_REPORT.md`.
 
+## Current cleanup status
+
+The standalone 3D vehicle preview, Three.js scene and model assets, and Design
+System demo have since been removed. The landing page retains its SVG taxi
+illustration. Driver-facing sign-in and registration use `/sarathi/login` and
+`/sarathi/register`; the former Captain login entry point is no longer registered.
+The historical notes below describe earlier iterations, not current routes.
+
 # Cinematic landing implementation
 
 Branch: `feature/cinematic-landing`. No commits, pushes, merges or publication

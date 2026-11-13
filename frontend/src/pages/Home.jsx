@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Navigation2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import GlassButton from '../components/glass/GlassButton';
 import GlassCard from '../components/glass/GlassCard';
 
@@ -40,7 +40,7 @@ export const Home = () => {
           transition={{ duration: 0.45, delay: 0.2 }}
           className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto leading-relaxed"
         >
-          Intelligent ride matching for a faster, smarter and more connected journey. Built with Apple-inspired Liquid Glass UI and real-time 3D vehicle synchronization.
+          Intelligent ride matching for a faster, smarter and more connected journey across Belagavi.
         </motion.p>
 
         {/* Hero CTAs */}
@@ -61,20 +61,11 @@ export const Home = () => {
             Book a Ride
           </GlassButton>
 
-          <GlassButton
-            variant="glass"
-            size="lg"
-            icon={Navigation2}
-            onClick={() => navigate('/3d')}
-            className="w-full sm:w-auto"
-          >
-            Launch 3D Taxi
-          </GlassButton>
         </motion.div>
       </section>
 
       {/* Feature Pillars */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
         <GlassCard
           icon={Zap}
           title="Weighted Matching"
@@ -88,23 +79,9 @@ export const Home = () => {
         </GlassCard>
 
         <GlassCard
-          icon={Navigation2}
-          title="3D Honda Taxi"
-          subtitle="Real GLB Three.js Rig"
-          interactive
-          onClick={() => navigate('/3d')}
-        >
-          <p className="text-xs text-text-secondary leading-relaxed">
-            Real Honda Taxi 3D model with automotive shaders, turntable rotation, wheel spin, and camera presets.
-          </p>
-        </GlassCard>
-
-        <GlassCard
           icon={ShieldCheck}
           title="Belagavi Grid"
           subtitle="Geospatial Hubs"
-          interactive
-          onClick={() => navigate('/design-preview')}
         >
           <p className="text-xs text-text-secondary leading-relaxed">
             Pre-calibrated for CBT, Railway Station, KLE Hospital, Tilakwadi, VTU, and Sambra Airport.

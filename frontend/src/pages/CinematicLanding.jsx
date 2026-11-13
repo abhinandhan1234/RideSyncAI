@@ -1,30 +1,19 @@
 import Arrow from '../components/cinematic/Arrow';
-import { Component, Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PublicNav from '../components/cinematic/PublicNav';
 import TaxiIllustration from '../components/cinematic/TaxiIllustration';
-import { useReducedMotion, useScrollDirector } from '../components/cinematic/ScrollDirector';
+import { useScrollDirector } from '../components/cinematic/ScrollDirector';
 import '../components/cinematic/cinematic.css';
-const Scene = lazy(()=>import('../components/cinematic/CinematicScene'));
-class SceneBoundary extends Component {
-  state={failed:false};
-  static getDerivedStateFromError(){ return {failed:true}; }
-  render(){ return this.state.failed ? <TaxiIllustration/> : this.props.children; }
-}
 const chapters=['The arrival','Every kilometre matters','The smarter route','The city moves with you','Your journey starts here'];
-function webglAvailable(){try{const canvas=document.createElement('canvas');const gl=canvas.getContext('webgl2');if(!gl)return false;gl.getExtension('WEBGL_lose_context')?.loseContext();return true;}catch{return false;}}
 export default function CinematicLanding(){
-  const root=useRef(); const {director,chapter}=useScrollDirector(root); const reduced=useReducedMotion();
-  const [webgl,setWebgl]=useState(false),[visible,setVisible]=useState(true),[failed,setFailed]=useState(false);
+  const root=useRef(); const {chapter}=useScrollDirector(root);
   const [route,setRoute]=useState('Eco');
-  useEffect(()=>{setWebgl(webglAvailable());const update=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
-  return <div className="cinematic" ref={root} data-chapter="0">
+  return <div className="cinematic" ref={root} data-chapter={chapter}>
     <a className="cinema-skip" href="#arrival">Skip to journey options</a>
     <PublicNav/>
     <div className="cinema-stage" aria-hidden="true">
-      <span className="stage-orbit"/>
-      <SceneBoundary>{webgl&&!reduced&&!failed&&visible ? <Suspense fallback={<TaxiIllustration/>}><Scene director={director} onFailure={()=>setFailed(true)}/></Suspense> : <TaxiIllustration/>}</SceneBoundary>
-      <span className="stage-caption">INTELLIMARG / CITY EDITION <i>01</i></span>
+      <TaxiIllustration/>
     </div>
     <main>
       <section className="cinema-chapter cinema-hero" id="explore" aria-labelledby="hero-title">
@@ -62,7 +51,7 @@ export default function CinematicLanding(){
         <p className="cinema-eyebrow">04 / Your journey starts here</p><h2 id="arrival-title">Where are we<br/><em>taking you?</em></h2><p className="cinema-description">One city. Two ways to move.</p>
         <div className="role-options">
           <Link to="/login/passenger" className="role-option"><span className="role-label">YATRI / 01</span><h3>Ride with IntelliMarg</h3><p>Book smarter journeys with transparent routes, intelligent matching and estimated fuel-aware choices.</p><span className="role-cta">Continue as Yatri <span aria-hidden="true"><Arrow/></span></span></Link>
-          <Link to="/login/captain" className="role-option"><span className="role-label">SARATHI / 02</span><h3>Drive with IntelliMarg</h3><p>Find suitable rides, spend less time idle and make better decisions with demand intelligence.</p><span className="role-cta">Continue as Sarathi <span aria-hidden="true"><Arrow/></span></span></Link>
+          <Link to="/sarathi/login" className="role-option"><span className="role-label">SARATHI / 02</span><h3>Drive with IntelliMarg</h3><p>Find suitable rides, spend less time idle and make better decisions with demand intelligence.</p><span className="role-cta">Continue as Sarathi <span aria-hidden="true"><Arrow/></span></span></Link>
         </div>
       </div><footer className="cinema-footer"><span>IntelliMarg — Belagavi</span><Link to="/book">Book Your Ride <Arrow/></Link><span>Smarter Routes. Better Rides.</span></footer></section>
     </main>

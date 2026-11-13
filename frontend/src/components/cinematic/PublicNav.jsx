@@ -10,7 +10,6 @@ export default function PublicNav() {
       <a className="nav-explore" href="/#explore">Explore</a>
       <a className="nav-explore" href="/#dispatch">How it works</a>
       <Link to="/login/passenger">Passenger <span aria-hidden="true"><Arrow/></span></Link>
-      <Link className="nav-captain" to="/login/captain">Captain <span aria-hidden="true"><Arrow/></span></Link>
       <Link className="nav-admin" to="/login/admin">Admin <span aria-hidden="true"><Arrow/></span></Link>
       <Link to="/sarathi/login">Sarathi Login</Link>
       <Link className="nav-captain" to="/sarathi/register">Register as Sarathi <span aria-hidden="true"><Arrow/></span></Link>

@@ -1,15 +1,14 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Sparkles, Box, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, ShieldCheck } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
  * TopHeader: Floating Liquid Glass app header displaying city context (Belagavi),
- * live telemetry status, and quick-access 3D Vehicle & Design System triggers.
+ * Belagavi context and quick access to administration.
  */
 export const TopHeader = ({ className = '' }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   return (
     <header
@@ -63,37 +62,6 @@ export const TopHeader = ({ className = '' }) => {
             <span className="sm:hidden">Ops</span>
           </button>
 
-          {/* 3D Taxi Direct Switch */}
-          <button
-            type="button"
-            onClick={() => navigate('/3d')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all select-none',
-              location.pathname === '/3d'
-                ? 'bg-accent/20 border border-accent/40 text-accent shadow-accent-pill'
-                : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-text-secondary hover:text-text-primary'
-            )}
-          >
-            <Box className="w-3.5 h-3.5 text-accent" />
-            <span className="hidden xs:inline">3D Honda Taxi</span>
-            <span className="xs:hidden">3D</span>
-          </button>
-
-          {/* Design System Preview */}
-          <button
-            type="button"
-            onClick={() => navigate('/design-preview')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all select-none',
-              location.pathname === '/design-preview'
-                ? 'bg-accent/20 border border-accent/40 text-accent shadow-accent-pill'
-                : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-text-secondary hover:text-text-primary'
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span className="hidden sm:inline">Design System</span>
-            <span className="sm:hidden">Tokens</span>
-          </button>
         </div>
       </div>
     </header>

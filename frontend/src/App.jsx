@@ -11,10 +11,8 @@ const Booking = lazy(() => import('./pages/Booking'));
 const Tracking = lazy(() => import('./pages/Tracking'));
 import Activity from './pages/Activity';
 import Profile from './pages/Profile';
-const DesignSystemPreview = lazy(() => import('./pages/DesignSystemPreview'));
 import {SarathiDashboard,SarathiLogin,SarathiProfile,SarathiRegister,SarathiVerification} from './pages/sarathi/SarathiPages';
 import SarathiAdmin from './pages/sarathi/SarathiAdmin';
-const Taxi3DPreview = lazy(() => import('./pages/Taxi3DPreview'));
 function ScrollReset() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
@@ -54,7 +52,7 @@ class ErrorBoundary extends React.Component {
 function ApplicationPage({children,role}){
  const {auth,restoring}=useRide();
  if(restoring)return <p role="status">Restoring your session…</p>;
- if(!auth)return <Navigate replace to={role==='driver'?'/login/captain':'/login/passenger'}/>;
+ if(!auth)return <Navigate replace to={role==='driver'?'/sarathi/login':'/login/passenger'}/>;
  if(role&&auth.user.role!==role)return <Navigate replace to={auth.user.role==='driver'?'/captain':'/book'}/>;
  return <AppShell>{children}</AppShell>;
 }
@@ -70,7 +68,6 @@ export function App() {
             <Route path="/" element={<CinematicLanding />} />
             <Route path="/login" element={<Navigate to="/login/admin" replace />} />
             <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
-            <Route path="/login/captain" element={<RoleLogin role="captain" />} />
             <Route path="/login/admin" element={<RoleLogin role="admin" />} />
             <Route path="/captain" element={<ApplicationPage role="driver"><CaptainDashboard /></ApplicationPage>} />
             <Route path="/admin" element={<ApplicationPage><AdminDashboard /></ApplicationPage>} />
@@ -86,8 +83,6 @@ export function App() {
             <Route path="/ride/:rideId" element={<ApplicationPage role="passenger"><Tracking /></ApplicationPage>} />
             <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
             <Route path="/profile" element={<ApplicationPage><Profile /></ApplicationPage>} />
-            <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />
-            <Route path="/3d" element={<ApplicationPage><Taxi3DPreview /></ApplicationPage>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

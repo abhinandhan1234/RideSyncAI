@@ -300,7 +300,8 @@ Allowed driver-initiated transitions:
 | From | To | Actor |
 |------|----|-------|
 | `ACCEPTED` | `ARRIVING` | driver |
-| `ARRIVING` | `ONGOING` | driver |
+| `ARRIVING` | `ARRIVED` | driver |
+| `ARRIVED` | `ONGOING` | driver |
 | `ONGOING` | `COMPLETED` | driver |
 | `ACCEPTED` | `CANCELLED` | passenger (via their own endpoint) |
 
@@ -581,3 +582,33 @@ Find or create a ride pool matching the given ride parameters.
 | `surge_updated` | Server → Passenger | Zone surge multiplier changed |
 
 See `ARCHITECTURE.md §5` for full payload definitions.
+
+---
+
+## Implemented booking experience additions
+
+### GET `/api/locations/search?q={query}`
+
+Returns up to six OpenStreetMap Nominatim place results. Queries must contain 3–120 characters. Results are cached for 10 minutes, identical pending requests are coalesced, outbound requests are spaced at least 1.1 seconds apart, and each client is limited to 30 requests per minute.
+
+```json
+{"suggestions":[{"name":"Belagavi Railway Station","address":"…","latitude":15.8553,"longitude":74.507,"placeType":"railway"}]}
+```
+
+### GET `/api/locations/reverse?lat={latitude}&lon={longitude}`
+
+Reverse geocodes a map selection and returns `{ "location": { "name", "address", "latitude", "longitude", "placeType" } }`. Coordinate ranges are validated and the same geocoder cache/throttle is used.
+
+### Ride booking and tracking details
+
+`POST /api/rides` also accepts `pickupAddress` and `dropoffAddress` (selected place names, each up to 200 characters) and persists them with the ride. `GET /api/rides/:rideId` returns those labels, passenger count, route type, estimate fields, and assigned driver name/vehicle/location when a driver is assigned. Existing authentication and ranked dispatch remain in force.
+
+### PATCH `/api/drivers/location`
+
+Driver-only. Accepts `{ "latitude": 15.85, "longitude": 74.50 }`, validates WGS84 ranges, updates the authenticated driver's GeoJSON point and timestamp, then notifies the ride room if they have an active ride.
+
+### PATCH `/api/rides/:rideId/cancel`
+
+Passenger-only. Accepts an optional reason from `Changed my plans`, `Booked by mistake`, `Driver taking too long`, `Found another ride`, or `Other`. Cancellation atomically claims only eligible pre-completion states, records the reason/time, closes a pending offer, releases the driver only when still assigned to that ride, and notifies the driver's user room. The existing POST cancellation route remains as a compatibility alias.
+
+The driver lifecycle now supports `ACCEPTED → ARRIVING → ARRIVED → ONGOING → COMPLETED`; the passenger tracking page refreshes backend state every two seconds and stops at a terminal state.

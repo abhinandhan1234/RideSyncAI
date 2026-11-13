@@ -3,12 +3,14 @@ import { apiRequest } from '../services/api';
 import { routeFromResponse, bookingPayload } from '../services/ride-utils';
 const Context=createContext(null);
 export const useRide=()=>useContext(Context);
+function readSavedAuth(){try{return JSON.parse(sessionStorage.getItem('ridesync.auth')||'null');}catch{return null;}}
 export function RideProvider({children}) {
-  const [auth,setAuth]=useState(null); // Tokens stay in memory; never persisted in localStorage.
+  const [auth,setAuthState]=useState(readSavedAuth); // Session-scoped only, so a tracking refresh can reload its ride.
   const [pickup,setPickup]=useState(null),[dropoff,setDropoff]=useState(null),[routeType,setRouteType]=useState('shortest');
   const [passengerCount,setPassengerCount]=useState(1),[route,setRoute]=useState(null),[routeLoading,setRouteLoading]=useState(false),[routeError,setRouteError]=useState('');
   const [mode,setMode]=useState('simulation'),[ride,setRide]=useState(null),[simulation,setSimulation]=useState({phase:'ready',percent:0});
   const [busy,setBusy]=useState(false),[error,setError]=useState('');const submitting=useRef(false);
+  function setAuth(value){setAuthState(value);try{if(value)sessionStorage.setItem('ridesync.auth',JSON.stringify(value));else sessionStorage.removeItem('ridesync.auth');}catch{}}
   const locked=busy||(mode==='simulation'?simulation.phase!=='ready':ride&&!['CANCELLED','COMPLETED','FAILED'].includes(ride.status));
   useEffect(()=>{
     setRoute(null);setRouteError('');
@@ -52,16 +54,22 @@ export function RideProvider({children}) {
     if(mode==='simulation'){setSimulation({phase:'searching',percent:0});return true;}
     if(auth?.user.role!=='passenger'){setError('Sign in as a passenger to book through the backend.');return false;}
     submitting.current=true;setBusy(true);
-    try{setRide(await apiRequest('/rides',{method:'POST',token:auth.accessToken,body:bookingPayload({pickup,dropoff,routeType,passengerCount})}));return true;}
+    try{const created=await apiRequest('/rides',{method:'POST',token:auth.accessToken,body:bookingPayload({pickup,dropoff,routeType,passengerCount})});setRide(created);return created;}
     catch(e){setError(e.message);return false;}finally{submitting.current=false;setBusy(false);}
   }
-  async function cancel(){
+  async function loadRide(rideId){
+    if(!auth?.accessToken)throw new Error('Sign in again to restore this ride.');
+    setMode('backend');setBusy(true);setError('');
+    try{const restored=await apiRequest(`/rides/${rideId}`,{token:auth.accessToken});setRide(restored);if(restored.pickup?.coordinates)setPickup({lat:restored.pickup.coordinates[1],lng:restored.pickup.coordinates[0],name:restored.pickupAddress||'Pickup'});if(restored.dropoff?.coordinates)setDropoff({lat:restored.dropoff.coordinates[1],lng:restored.dropoff.coordinates[0],name:restored.dropoffAddress||'Drop-off'});return restored;}
+    catch(e){setError(e.message);throw e;}finally{setBusy(false);}
+  }
+  async function cancel(reason=''){
     setError('');
-    if(mode==='simulation'){setSimulation({phase:'ready',percent:0});return;}
-    if(!ride||!auth)return;
-    setBusy(true);try{setRide({...ride,...await apiRequest(`/rides/${ride.rideId}/cancel`,{method:'POST',token:auth.accessToken,body:{}})});}catch(e){setError(e.message);}finally{setBusy(false);}
+    if(mode==='simulation'){setSimulation({phase:'ready',percent:0});return true;}
+    if(!ride||!auth)return false;
+    setBusy(true);try{setRide({...ride,...await apiRequest(`/rides/${ride.rideId}/cancel`,{method:'PATCH',token:auth.accessToken,body:{reason}})});return true;}catch(e){setError(e.message);return false;}finally{setBusy(false);}
   }
   function reset(){setRide(null);setSimulation({phase:'ready',percent:0});setError('');}
   function logout(){setAuth(null);reset();setMode('simulation');}
-  return <Context.Provider value={{auth,setAuth,logout,pickup,setPickup,dropoff,setDropoff,routeType,setRouteType,passengerCount,setPassengerCount,route,routeLoading,routeError,mode,setMode,ride,simulation,busy,error,locked,book,cancel,reset}}>{children}</Context.Provider>;
+  return <Context.Provider value={{auth,setAuth,logout,pickup,setPickup,dropoff,setDropoff,routeType,setRouteType,passengerCount,setPassengerCount,route,routeLoading,routeError,mode,setMode,ride,simulation,busy,error,locked,book,loadRide,cancel,reset}}>{children}</Context.Provider>;
 }

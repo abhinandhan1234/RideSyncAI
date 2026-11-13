@@ -107,6 +107,8 @@ Stores all registered and admin-approved drivers.
 
 Central ride record — the source of truth for ride state.
 
+The implemented live ride model also stores `pickupAddress`, `dropoffAddress`, and `cancellationReason` so a selected geocoded label and cancellation audit detail survive refreshes. Driver GPS is stored on the driver document's GeoJSON `location` with `lastLocationAt`; the existing `2dsphere` index supports matching.
+
 ### Fields
 
 | Field | Type | Required | Description |

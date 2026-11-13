@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test",
     "demo": "node scripts/demo.js"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "socket.io": "^4.8.0"
   },
   "devDependencies": {
-    "mongodb-memory-server": "^10.4.3"
+    "mongodb-memory-server": "^10.4.3",
+    "ws": "^8.21.3"
   }
 }

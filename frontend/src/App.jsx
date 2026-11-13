@@ -37,6 +37,7 @@ export function App() {
           <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
           <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
           <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
+          <Route path="/ride/:rideId" element={<ApplicationPage><Tracking /></ApplicationPage>} />
           <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
           <Route path="/profile" element={<ApplicationPage><Profile /></ApplicationPage>} />
           <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />

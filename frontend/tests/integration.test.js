@@ -4,7 +4,8 @@ import {bookingPayload,validLocation,routeFromResponse,routePoint} from '../src/
 import {apiRequest} from '../src/services/api.js';
 const pickup={lat:15.8497,lng:74.4977},dropoff={lat:15.86,lng:74.51};
 test('map selections become authenticated booking GeoJSON coordinates',()=>{
-  assert.deepEqual(bookingPayload({pickup,dropoff,passengerCount:2,routeType:'fastest'}),{pickup:{type:'Point',coordinates:[74.4977,15.8497]},dropoff:{type:'Point',coordinates:[74.51,15.86]},passengerCount:2,routeType:'fastest',vehicleType:'car'});
+  const namedPickup={...pickup,name:'Tilakwadi, Belagavi'},namedDropoff={...dropoff,name:'Belagavi Railway Station'};
+  assert.deepEqual(bookingPayload({pickup:namedPickup,dropoff:namedDropoff,passengerCount:2,routeType:'fastest'}),{pickup:{type:'Point',coordinates:[74.4977,15.8497]},dropoff:{type:'Point',coordinates:[74.51,15.86]},pickupAddress:'Tilakwadi, Belagavi',dropoffAddress:'Belagavi Railway Station',passengerCount:2,routeType:'fastest',vehicleType:'car'});
   assert.throws(()=>bookingPayload({pickup:{lat:91,lng:0},dropoff}));
   assert.throws(()=>bookingPayload({pickup,dropoff,passengerCount:0}));
   assert.throws(()=>bookingPayload({pickup,dropoff,routeType:'invented'}));
@@ -21,7 +22,7 @@ test('road route selection retains fastest and shortest choices without inventin
 });
 test('booking API sends actual token and data; backend and network errors remain errors',async()=>{
   let captured;
-  const result=await apiRequest('/rides',{method:'POST',token:'test-token',body:bookingPayload({pickup,dropoff})},async(url,options)=>{captured={url,options};return{ok:true,json:async()=>({rideId:'stored',status:'REQUESTED'})};});
+  const result=await apiRequest('/rides',{method:'POST',token:'test-token',body:bookingPayload({pickup:{...pickup,name:'Camp, Belagavi'},dropoff:{...dropoff,name:'Shahapur, Belagavi'}})},async(url,options)=>{captured={url,options};return{ok:true,json:async()=>({rideId:'stored',status:'REQUESTED'})};});
   assert.equal(captured.url,'/api/rides');assert.equal(captured.options.headers.Authorization,'Bearer test-token');assert.deepEqual(JSON.parse(captured.options.body).pickup.coordinates,[74.4977,15.8497]);assert.equal(result.rideId,'stored');
   await assert.rejects(apiRequest('/rides',{},async()=>({ok:false,status:401,json:async()=>({message:'Valid Bearer token required'})})),/Valid Bearer/);
   await assert.rejects(apiRequest('/rides',{},async()=>{throw new Error('network');}),/Cannot reach/);

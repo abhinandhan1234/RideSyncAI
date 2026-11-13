@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { WebSocket } from 'ws';
 import app from '../src/app.js';
 import {User,Driver,Ride,RideOffer,Zone} from '../src/models/index.js';
 import {expireOffers,drainDispatch} from '../src/services/matching/dispatch.js';
@@ -53,10 +54,13 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal(near.data.count,2);
   assert.equal((await request('/api/drivers/nearby?lng=181&lat=15.85','GET',undefined,passenger)).status,400);
   assert.equal((await request('/api/drivers/nearby?lng=74.5&lat=15.85')).status,401);
-  const payload={pickup:point(74.5,15.85),dropoff:point(74.51,15.86),routeType:'eco'};
+  const payload={pickup:point(74.5,15.85),dropoff:point(74.51,15.86),pickupAddress:'Camp, Belagavi',dropoffAddress:'Belagavi Railway Station',routeType:'eco'};
+  assert.equal((await request('/api/locations/search?q=x')).status,400);
+  assert.equal((await request('/api/locations/reverse?lat=91&lon=74.5')).status,400);
   const created=await request('/api/rides','POST',payload,passenger);
   assert.equal(created.status,202);
   const rideId=created.data.rideId;
+  assert.equal((await request(`/api/rides/${rideId}/cancel`,'PATCH',{},b)).status,403);
   const first=await wait(()=>RideOffer.findOne({rideId,attempt:1}));
   await wait(()=>driverSocket.frames.some(frame=>frame.includes('ride:offer')));
   passengerSocket.ws.send('42'+JSON.stringify(['ride:join',rideId]));
@@ -75,7 +79,15 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.deepEqual(concurrentAcceptance.map(result=>result.status).sort(),[200,409]);
   await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ride:accepted')));
   assert.equal((await request(`/api/offers/${second.id}/respond`,'POST',{action:'accept'},b)).status,409);
-  for(const status of ['ARRIVING','ONGOING','COMPLETED'])assert.equal((await request(`/api/rides/${rideId}/status`,'PATCH',{status},b)).status,200);
+  const details=await request(`/api/rides/${rideId}`,'GET',undefined,passenger);
+  assert.equal(details.data.pickupAddress,payload.pickupAddress);
+  assert.equal(details.data.driver.name,'Test Driver B');
+  assert.equal((await request('/api/drivers/location','PATCH',{latitude:15.851,longitude:74.501},b)).status,200);
+  const liveDetails=await request(`/api/rides/${rideId}`,'GET',undefined,passenger);
+  assert.equal(liveDetails.data.driver.locationSource,'GPS');
+  assert.deepEqual(liveDetails.data.driver.location.coordinates,[74.501,15.851]);
+  assert.equal((await request('/api/drivers/location','PATCH',{latitude:91,longitude:74.5},b)).status,400);
+  for(const status of ['ARRIVING','ARRIVED','ONGOING','COMPLETED'])assert.equal((await request(`/api/rides/${rideId}/status`,'PATCH',{status},b)).status,200);
   await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ride:status')));
   assert.equal((await Ride.findById(rideId)).status,'COMPLETED');
   console.log('Verified booking response',JSON.stringify(created.data));
@@ -88,8 +100,12 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   const competing=await request('/api/rides','POST',payload,passenger);
   assert.equal(competing.status,409);
   await wait(async()=>['OFFERED','FAILED'].includes((await Ride.findById(noDrivers.data.rideId)).status));
-  assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'POST',{},passenger)).status,200);
-  assert.equal((await Ride.findById(noDrivers.data.rideId)).status,'CANCELLED');
+  const noDriverStatus=(await Ride.findById(noDrivers.data.rideId)).status;
+  if(noDriverStatus!=='FAILED'){
+   assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'PATCH',{reason:'Changed my plans'},passenger)).status,200);
+   assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'PATCH',{reason:'Changed my plans'},passenger)).status,409);
+   assert.equal((await Ride.findById(noDrivers.data.rideId)).cancellationReason,'Changed my plans');
+  }
   assert.equal((await request('/api/rides','POST',{...payload,pickup:point(181,15.85)},passenger)).status,400);
   const expiring=await request('/api/rides','POST',payload,passenger);
   const expiringOffer=await wait(()=>RideOffer.findOne({rideId:expiring.data.rideId,attempt:1}));
@@ -98,6 +114,11 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal((await RideOffer.findById(expiringOffer._id)).status,'EXPIRED');
   assert.ok(await RideOffer.exists({rideId:expiring.data.rideId,attempt:2}));
   await request(`/api/rides/${expiring.data.rideId}/cancel`,'POST',{},passenger);
+  const duplicateRequests=await Promise.all([request('/api/rides','POST',payload,passenger),request('/api/rides','POST',payload,passenger)]);
+  assert.deepEqual(duplicateRequests.map(item=>item.status).sort(),[202,409]);
+  const duplicateRide=duplicateRequests.find(item=>item.status===202).data.rideId;
+  await wait(async()=>['OFFERED','FAILED'].includes((await Ride.findById(duplicateRide)).status));
+  if((await Ride.findById(duplicateRide)).status!=='FAILED')await request(`/api/rides/${duplicateRide}/cancel`,'PATCH',{reason:'Booked by mistake'},passenger);
   await Driver.updateMany({_id:{$in:drivers.map(d=>d._id)}},{$set:{status:'OFFLINE',activeRideId:null}});
   await Driver.updateOne({_id:drivers[0]._id},{$set:{status:'AVAILABLE'}});
   const other=await request('/api/auth/register','POST',{name:'Second Passenger',email:`second-${tag}@example.invalid`,password});

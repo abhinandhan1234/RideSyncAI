@@ -49,9 +49,10 @@ function VerificationCard({title,documentType,verification,onStart,busy}){
 
 export function SarathiVerification(){
   const {auth}=useRide(),navigate=useNavigate();const [profile,setProfile]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-  useEffect(()=>{if(auth?.user.role!=='driver')return;apiRequest('/sarathi/profile',{token:auth.accessToken}).then(setProfile).catch(e=>setError(e.message));},[auth]);
+  const isDriver=String(auth?.user?.role||'').toLowerCase()==='driver';
+  useEffect(()=>{if(!isDriver||!auth?.accessToken)return;apiRequest('/sarathi/profile',{token:auth.accessToken}).then(setProfile).catch(e=>setError(e.message));},[auth,isDriver]);
   async function start(documentType){setBusy(true);setError('');setNotice('');try{const result=await apiRequest('/sarathi/verification/digilocker/start',{method:'POST',token:auth.accessToken,body:{documentType}});setNotice(result.message);const next=await apiRequest('/sarathi/profile',{token:auth.accessToken});setProfile(next);}catch(e){setError(e.message);}finally{setBusy(false);}}
-  if(auth?.user.role!=='driver')return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
+  if(!isDriver)return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
   return <SarathiShell><header className="sarathi-page-heading"><div><p className="sarathi-eyebrow">SARATHI PROFILE</p><h1>Document verification</h1><p>Verify Aadhaar and Driving Licence independently through the configured provider.</p></div></header><Flash error={error} notice={notice}/><div className="sarathi-two-column"><VerificationCard title="Aadhaar" documentType="AADHAAR" verification={profile?.driver?.verification?.aadhaar} onStart={start} busy={busy}/><VerificationCard title="Driving Licence" documentType="DRIVING_LICENSE" verification={profile?.driver?.verification?.drivingLicense} onStart={start} busy={busy}/></div><p className="sarathi-form-note">Cashfree live DigiLocker integration is pending credentials and access. Demo statuses are clearly labelled and never qualify as production verification.</p></SarathiShell>;
 }
 
@@ -60,8 +61,9 @@ function AuthRequired({navigate}){return <section className="sarathi-auth-card">
 
 export function SarathiProfile(){
   const {auth}=useRide(),navigate=useNavigate();const [data,setData]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[profilePhoto,onProfilePhoto,setProfilePhoto,profilePhotoError]=usePhoto(),[vehiclePhoto,onVehiclePhoto,setVehiclePhoto,vehiclePhotoError]=usePhoto();
-  const load=useCallback(()=>apiRequest('/sarathi/profile',{token:auth.accessToken}).then(setData).catch(e=>setError(e.message)),[auth]);useEffect(()=>{if(auth?.user.role==='driver')void load();},[auth,load]);
-  if(auth?.user.role!=='driver')return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
+  const isDriver=String(auth?.user?.role||'').toLowerCase()==='driver';
+  const load=useCallback(()=>{if(!auth?.accessToken)return;apiRequest('/sarathi/profile',{token:auth.accessToken}).then(setData).catch(e=>setError(e.message));},[auth]);useEffect(()=>{if(isDriver)void load();},[isDriver,load]);
+  if(!isDriver)return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
   if(!data)return <SarathiShell><article className="sarathi-card" role="status">Loading your Sarathi profile…</article></SarathiShell>;
   async function submit(event){event.preventDefault();setBusy(true);setError('');setNotice('');const f=new FormData(event.currentTarget);const body={fullName:f.get('fullName'),phone:f.get('phone'),email:f.get('email'),address:f.get('address'),city:f.get('city'),vehicleCategory:f.get('vehicleCategory'),manufacturer:f.get('manufacturer'),model:f.get('model'),registrationNumber:f.get('registrationNumber'),vehicleColor:f.get('vehicleColor'),vehicleRcDetails:f.get('vehicleRcDetails'),upiId:f.get('upiId'),upiAccountHolder:f.get('upiAccountHolder'),preferredPaymentMethod:f.get('preferredPaymentMethod')};try{await apiRequest('/sarathi/profile',{method:'PATCH',token:auth.accessToken,body});await uploadPhoto(auth.accessToken,'profile',profilePhoto);await uploadPhoto(auth.accessToken,'vehicle',vehiclePhoto);setProfilePhoto(null);setVehiclePhoto(null);setNotice('Profile updated.');await load();}catch(e){setError(e.message);}finally{setBusy(false);}}
   const d=data?.driver||emptyProfile,v=d.vehicle||{},p=d.payment||{},personal=d.profile||{};
@@ -70,9 +72,25 @@ export function SarathiProfile(){
 
 export function SarathiDashboard(){
   const {auth}=useRide(),navigate=useNavigate();const [data,setData]=useState(null),[offers,setOffers]=useState([]),[activeRide,setActiveRide]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[manualLocation,setManualLocation]=useState({latitude:'',longitude:''});
-  const refresh=useCallback(async(signal)=>{const profile=await apiRequest('/sarathi/profile',{token:auth.accessToken,signal});setData(profile);let currentRide=null;if(profile.driver.activeRideId){currentRide=await apiRequest(`/rides/${profile.driver.activeRideId}`,{token:auth.accessToken,signal});}setActiveRide(currentRide);const result=await apiRequest('/driver/offers',{token:auth.accessToken,signal});const detailed=await Promise.all((result.offers||[]).map(async offer=>{try{return {...offer,ride:await apiRequest(`/rides/${offer.rideId}`,{token:auth.accessToken,signal})};}catch{return offer;}}));setOffers(detailed);setError('');},[auth]);
-  useEffect(()=>{if(auth?.user.role!=='driver')return;let timer,active=true;const controller=new AbortController();const poll=async()=>{try{await refresh(controller.signal);}catch(e){if(active&&e.name!=='AbortError')setError(e.message);}finally{if(active&&!controller.signal.aborted)timer=setTimeout(poll,3000);}};void poll();return()=>{active=false;controller.abort();clearTimeout(timer);};},[auth,refresh]);
-  if(auth?.user.role!=='driver')return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
+  const isDriver=String(auth?.user?.role||'').toLowerCase()==='driver';
+  const refresh=useCallback(async(signal)=>{
+    if(!auth?.accessToken)return;
+    const profile=await apiRequest('/sarathi/profile',{token:auth.accessToken,signal});
+    setData(profile);
+    let currentRide=null;
+    if(profile?.driver?.activeRideId){
+      try{currentRide=await apiRequest(`/rides/${profile.driver.activeRideId}`,{token:auth.accessToken,signal});}catch{}
+    }
+    setActiveRide(currentRide);
+    try{
+      const result=await apiRequest('/driver/offers',{token:auth.accessToken,signal});
+      const detailed=await Promise.all((result.offers||[]).map(async offer=>{try{return {...offer,ride:await apiRequest(`/rides/${offer.rideId}`,{token:auth.accessToken,signal})};}catch{return offer;}}));
+      setOffers(detailed);
+    }catch{}
+    setError('');
+  },[auth]);
+  useEffect(()=>{if(!isDriver)return;let timer,active=true;const controller=new AbortController();const poll=async()=>{try{await refresh(controller.signal);}catch(e){if(active&&e.name!=='AbortError')setError(e.message);}finally{if(active&&!controller.signal.aborted)timer=setTimeout(poll,3000);}};void poll();return()=>{active=false;controller.abort();clearTimeout(timer);};},[isDriver,refresh]);
+  if(!isDriver)return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
   if(!data)return <SarathiShell><article className="sarathi-card" role="status">Loading your Sarathi profile…</article></SarathiShell>;
   const driver=data?.driver||emptyProfile,user=data?.user||auth.user,v=driver.vehicle||{},verification=driver.verification||{},next={ACCEPTED:'ARRIVING',ARRIVING:'ARRIVED',ARRIVED:'ONGOING',ONGOING:'COMPLETED'}[activeRide?.status];
   async function setAvailability(availability){setBusy(true);setError('');setNotice('');try{let location={};if(availability==='ONLINE'){let coords=null;if(navigator.geolocation)coords=await new Promise(resolve=>navigator.geolocation.getCurrentPosition(({coords:c})=>resolve(c),()=>resolve(null),{enableHighAccuracy:true,timeout:12000,maximumAge:5000}));const latitude=coords?.latitude??(manualLocation.latitude.trim()?Number(manualLocation.latitude):NaN),longitude=coords?.longitude??(manualLocation.longitude.trim()?Number(manualLocation.longitude):NaN);if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw new Error('Allow location access or enter valid latitude and longitude.');location={latitude,longitude};}const result=await apiRequest('/sarathi/availability',{method:'PATCH',token:auth.accessToken,body:{availability,...location}});setNotice(`You are ${result.availability.toLowerCase()}.`);await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}

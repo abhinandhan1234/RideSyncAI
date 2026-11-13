@@ -32,11 +32,13 @@ Demo records disappear when it stops. The initial MongoDB download may take a fe
 minutes. Leave the terminal open; press Ctrl+C to stop. If a port is already used,
 stop its previous server first. The launch script works from paths containing spaces.
 
-The frontend forwards `/api` requests to the backend. Book Ride offers a clearly
+The frontend forwards `/api` and `/uploads` requests to the backend. Book Ride offers a clearly
 labeled simulation and authenticated backend booking. Select pickup/drop-off on
 the map or enter coordinates; road routing requires Internet access to OSRM and
 map tiles require OpenStreetMap. Passenger registration/login is implemented.
-Captain accounts require administrator provisioning in the canonical database.
+Sarathi self-registration and review are available at `/sarathi/register`; live
+production dispatch still requires authorized admin approval and genuine
+Cashfree verification. For Android testing, follow [`docs/ANDROID_LAN_SETUP.md`](docs/ANDROID_LAN_SETUP.md).
 The disposable setup does not seed canonical drivers, so backend booking without
 provisioned drivers ends unmatched. The isolated `/api/demo` has its own synthetic
 drivers and contract in `backend/docs/API.md`.

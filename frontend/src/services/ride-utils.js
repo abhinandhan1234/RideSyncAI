@@ -3,9 +3,10 @@ export const toPoint = ({lat,lng}) => ({ type:'Point', coordinates:[lng,lat] });
 export function validLocation(at) { return at && Number.isFinite(at.lat) && Number.isFinite(at.lng) && Math.abs(at.lat)<=90 && Math.abs(at.lng)<=180; }
 export function bookingPayload({pickup,dropoff,passengerCount=1,routeType='shortest'}) {
   if(!validLocation(pickup)||!validLocation(dropoff))throw new Error('Choose valid pickup and drop-off coordinates.');
+  if(typeof pickup.name!=='string'||!pickup.name.trim()||typeof dropoff.name!=='string'||!dropoff.name.trim())throw new Error('Select pickup and drop-off places from the suggestions.');
   if(!Number.isInteger(passengerCount)||passengerCount<1||passengerCount>4)throw new Error('Choose 1–4 passengers.');
   if(!['fastest','shortest','eco'].includes(routeType))throw new Error('Invalid route preference.');
-  return {pickup:toPoint(pickup),dropoff:toPoint(dropoff),passengerCount,routeType,vehicleType:'car'};
+  return {pickup:toPoint(pickup),dropoff:toPoint(dropoff),pickupAddress:pickup.name.trim(),dropoffAddress:dropoff.name.trim(),passengerCount,routeType,vehicleType:'car'};
 }
 export function routePoint(route,progress) {
   if(!route?.points?.length)return null;

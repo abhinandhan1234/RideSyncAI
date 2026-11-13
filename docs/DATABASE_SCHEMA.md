@@ -6,6 +6,11 @@
 > **Database:** MongoDB 7  
 > **ODM:** Mongoose (Node.js backend)
 
+> **Implementation addendum (2026-11-14):** The sections below include the
+> original proposed schema. Runtime models are in `backend/src/models/index.js`;
+> the implemented `users` and `drivers` shapes described at the end supersede
+> older proposed field names where they differ.
+
 All GeoJSON coordinates follow the **[longitude, latitude]** order per the GeoJSON spec and MongoDB's `2dsphere` index requirement.
 
 ---
@@ -106,6 +111,8 @@ Stores all registered and admin-approved drivers.
 ## 3. `rides`
 
 Central ride record — the source of truth for ride state.
+
+The implemented live ride model also stores `pickupAddress`, `dropoffAddress`, and `cancellationReason` so a selected geocoded label and cancellation audit detail survive refreshes. Driver GPS is stored on the driver document's GeoJSON `location` with `lastLocationAt`; the existing `2dsphere` index supports matching.
 
 ### Fields
 
@@ -476,3 +483,41 @@ erDiagram
     zones ||--|| zone_pricing : "has pricing rule"
     simulation_runs ||--o{ demand_history : "may generate"
 ```
+
+---
+
+## Current Sarathi fields
+
+### `users`
+
+Existing user collection extended with `displayName`, unique sparse `email`,
+unique sparse `phone`, bcrypt `passwordHash` (excluded from normal projections),
+`role` (`PASSENGER`, `DRIVER`, `ADMIN`), `isSynthetic`, and Mongoose timestamps.
+Sarathi registration stores phone in normalized form and requires it. Passwords
+are never returned by the Sarathi API.
+
+### `drivers`
+
+The existing driver collection is extended in place; existing ride, location,
+ranking and activity records remain in the same collection. Additive fields:
+
+- `approvalStatus`: `INCOMPLETE`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`, or
+  `NEEDS_CORRECTION`.
+- `profile`: residential `address`, `city`, `photoUrl`.
+- `verification.aadhaar` and `verification.drivingLicense`: independent status
+  (`NOT_STARTED`, `PENDING`, `VERIFIED`, `FAILED`, `EXPIRED`, `CONSENT_DENIED`,
+  plus `DEMO_VERIFIED` for the isolated demo), provider, mode, verification
+  reference, masked number, consented document metadata, verification time and
+  last error. Full Aadhaar values are not stored.
+- `vehicle`: category (`BIKE`, `AUTO`, `CAR`), manufacturer, model, capacity,
+  registration plate, colour, photo URL and optional RC details.
+- `payment`: UPI ID, account holder name and preferred method (`UPI`, `CASH`,
+  `BOTH`). This records receiving preferences only; it does not create a payout.
+- `approvalNote`, `approvedAt`, and `approvedBy` for the admin decision.
+
+The existing `location` remains a GeoJSON Point in `[longitude, latitude]`
+order with its `2dsphere` index. Uploaded profile and vehicle images live in
+ignored `backend/uploads/`; only their relative URLs are stored in MongoDB.
+Cashfree demo verification remains separated by `provider: DEMO` and `mode:
+demo`; only `provider: CASHFREE`, `mode: live`, `status: VERIFIED` for both
+documents can meet production dispatch eligibility.

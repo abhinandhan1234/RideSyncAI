@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import healthRouter from './routes/health.routes.js';
+import bookingRouter from './routes/booking.routes.js';
 
 const app = express();
 
@@ -22,10 +23,11 @@ app.use(express.json());
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/health', healthRouter);
+app.use('/api', bookingRouter);
 
 // ── 404 handler ──────────────────────────────────────────────────────────────
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' });
 });
 
 // ── Global error handler ─────────────────────────────────────────────────────
@@ -33,7 +35,7 @@ app.use((_req, res) => {
 app.use((err, _req, res, _next) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
-  res.status(status).json({ error: message, status });
+  res.status(status).json({ error: err.error || 'INTERNAL_ERROR', message });
 });
 
 export default app;

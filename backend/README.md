@@ -108,6 +108,14 @@ Expected response:
 
 ## Running Tests
 
+MongoDB integration tests use the isolated `ridesync_belagavi_test` database. The test rejects every other database name and creates fictional users and canonical `Z01` driver fixtures with bcrypt-hashed passwords. It marks only earlier integration-test rides and offers inactive before each run. The local MongoDB instance is standalone, so the implementation uses conditional atomic updates for driver reservation and ride transitions rather than multi-document transactions.
+
+```bash
+TEST_MONGODB_URI=mongodb://127.0.0.1:27017/ridesync_belagavi_test npm test
+```
+
+To run the server, set `MONGODB_URI` and a unique `JWT_SECRET` of at least 32 characters in a local `.env` file, then run `npm run dev`. The default HTTP port is `5002`. The test suite provisions development driver accounts only in the test database; it does not change the historical `ridesync_belagavi` records.
+
 ```bash
 npm test
 ```

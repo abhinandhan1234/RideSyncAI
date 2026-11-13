@@ -3,7 +3,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { Zone, User, Driver as LiveDriver, Ride } from '../src/models/index.js';
+import { Zone, User, Driver as LiveDriver, Ride, DriverApplication } from '../src/models/index.js';
 import { spawn } from 'node:child_process';
 import { Driver, initializeBookingModels } from '../src/models/booking.js';
 const mongo = await MongoMemoryReplSet.create({ replSet:{count:1}, binary:{version:'7.0.24'} });
@@ -32,6 +32,12 @@ try {
   const passengerUser = await User.findOneAndUpdate(
     { email: 'passenger@ridesync.demo' },
     { $setOnInsert: { displayName: 'Demo Passenger', email: 'passenger@ridesync.demo', passwordHash: hash, role: 'PASSENGER', isSynthetic: true } },
+    { upsert: true, new: true }
+  );
+
+  const adminUser = await User.findOneAndUpdate(
+    { email: 'admin@ridesync.demo' },
+    { $setOnInsert: { displayName: 'System Administrator', email: 'admin@ridesync.demo', passwordHash: hash, role: 'ADMIN', isSynthetic: true } },
     { upsert: true, new: true }
   );
 
@@ -71,6 +77,87 @@ try {
       fare: { total: 210, currency: 'INR', surge: 1 },
       requestedAt: new Date(Date.now() - 7200000),
       completedAt: new Date(Date.now() - 6000000)
+    },
+    {
+      passengerId: passengerUser._id,
+      pickup: { type: 'Point', coordinates: [74.4980, 15.8490] },
+      dropoff: { type: 'Point', coordinates: [74.5150, 15.8620] },
+      pickupZoneCode: 'Z01',
+      dropoffZoneCode: 'Z02',
+      passengerCount: 1,
+      requestedVehicleType: 'AUTO',
+      routeType: 'fastest',
+      status: 'CANCELLED',
+      source: 'LIVE',
+      distanceKm: 3.5,
+      estimatedDurationMin: 10,
+      fare: { total: 95, currency: 'INR', surge: 1 },
+      metadata: { cancellationReason: 'Passenger cancelled: Schedule change' },
+      requestedAt: new Date(Date.now() - 5400000),
+      cancelledAt: new Date(Date.now() - 5100000)
+    },
+    {
+      passengerId: passengerUser._id,
+      pickup: { type: 'Point', coordinates: [74.5100, 15.8550] },
+      dropoff: { type: 'Point', coordinates: [74.5300, 15.8350] },
+      pickupZoneCode: 'Z02',
+      dropoffZoneCode: 'Z03',
+      passengerCount: 2,
+      requestedVehicleType: 'CAR',
+      routeType: 'fastest',
+      status: 'CANCELLED',
+      source: 'LIVE',
+      distanceKm: 6.2,
+      estimatedDurationMin: 18,
+      fare: { total: 220, currency: 'INR', surge: 1 },
+      metadata: { cancellationReason: 'Offer timeout: No available drivers accepted in 20s' },
+      requestedAt: new Date(Date.now() - 10800000),
+      cancelledAt: new Date(Date.now() - 10500000)
+    }
+  ]);
+
+  await DriverApplication.create([
+    {
+      name: 'Ramesh Patil',
+      email: 'ramesh.patil@example.com',
+      phone: '+919845012345',
+      vehicleType: 'AUTO',
+      plate: 'KA-22-A-501',
+      zoneCode: 'Z02',
+      status: 'PROCESSING',
+      submittedAt: new Date(Date.now() - 14400000)
+    },
+    {
+      name: 'Sunil Naik',
+      email: 'sunil.naik@example.com',
+      phone: '+919845098765',
+      vehicleType: 'SEDAN',
+      plate: 'KA-22-S-902',
+      zoneCode: 'Z01',
+      status: 'PROCESSING',
+      submittedAt: new Date(Date.now() - 28800000)
+    },
+    {
+      name: 'Anand Joshi',
+      email: 'anand.joshi@example.com',
+      phone: '+919845045678',
+      vehicleType: 'CAR',
+      plate: 'KA-22-C-303',
+      zoneCode: 'Z03',
+      status: 'APPROVED',
+      submittedAt: new Date(Date.now() - 86400000),
+      reviewedAt: new Date(Date.now() - 43200000)
+    },
+    {
+      name: 'Kiran Desai',
+      email: 'kiran.desai@example.com',
+      phone: '+919845067890',
+      vehicleType: 'BIKE',
+      plate: 'KA-22-B-112',
+      zoneCode: 'Z04',
+      status: 'REJECTED',
+      submittedAt: new Date(Date.now() - 172800000),
+      reviewedAt: new Date(Date.now() - 86400000)
     }
   ]);
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Activity, 
   Car, 
@@ -18,6 +19,7 @@ import { apiRequest } from '../services/api';
 import GlassPanel from '../components/glass/GlassPanel';
 import GlassCard from '../components/glass/GlassCard';
 import GlassButton from '../components/glass/GlassButton';
+import AccidentRiskMap from '../components/admin/AccidentRiskMap';
 
 export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState(null);
@@ -112,7 +114,16 @@ export default function AdminDashboard() {
         </div>
 
         {/* Action Controls using ride-segment design */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="ride-segment" aria-label="Admin navigation tabs">
+            <button type="button" aria-pressed="true" className="text-xs font-semibold">
+              Overview
+            </button>
+            <Link to="/admin/applications" className="flex items-center gap-1 px-3 py-2 text-xs text-text-secondary hover:text-text-primary">
+              Applications & Audit
+            </Link>
+          </div>
+
           <div className="ride-segment" aria-label="Auto polling toggle">
             <button
               type="button"
@@ -242,167 +253,99 @@ export default function AdminDashboard() {
         </GlassPanel>
       </div>
 
-      {/* ── Operational Grid: Live Fleet Radar & Live Ride Activity ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
-        {/* Left 2 Cols: Belagavi Driver Fleet Radar */}
-        <div className="lg:col-span-2 space-y-4">
-          <GlassPanel className="p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
-              <div>
-                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-accent" />
-                  Active Fleet Telemetry
-                </h3>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  Spatial location, status, and sector assignments in Belagavi.
-                </p>
-              </div>
+      {/* ── Section 2: Belagavi Accident Risk & Safety Zones Map (Full Width, Horizontal Layout) ── */}
+      <GlassPanel className="p-6 sm:p-7 space-y-5">
+        <AccidentRiskMap />
+      </GlassPanel>
 
-              {/* Sector Switcher using ride-segment */}
-              <div className="ride-segment" aria-label="Sector filter">
-                {belagaviSectors.map((sector) => (
-                  <button
-                    key={sector.id}
-                    type="button"
-                    aria-pressed={selectedZone === sector.id}
-                    onClick={() => setSelectedZone(sector.id)}
-                    className="text-xs py-1.5 px-3 min-h-[36px]"
-                  >
-                    {sector.id}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* ── Section 3: Active Fleet Telemetry ── */}
+      <GlassPanel className="p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
+          <div>
+            <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <Radio className="w-4 h-4 text-accent" />
+              Active Fleet Telemetry
+            </h3>
+            <p className="text-xs text-text-secondary mt-0.5">
+              Spatial location, status, and sector assignments in Belagavi.
+            </p>
+          </div>
 
-            {filteredDrivers.length === 0 ? (
-              <p className="py-8 text-center text-sm text-text-secondary">
-                No active drivers detected in sector <span className="font-mono text-accent">{selectedZone}</span>.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {filteredDrivers.map((driver) => {
-                  const isAvailable = driver.status === 'AVAILABLE';
-                  const isBusy = driver.status === 'BUSY' || driver.status === 'RESERVED';
-                  return (
-                    <GlassCard
-                      key={driver.id || driver.driverId}
-                      className="p-4 space-y-2 hover:border-accent/30 transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${isAvailable ? 'bg-emerald-400' : isBusy ? 'bg-amber-400' : 'bg-slate-500'}`} />
-                          <span className="font-bold text-xs text-text-primary">
-                            {driver.name}
-                          </span>
-                        </div>
-                        <span
-                          className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border ${
-                            isAvailable
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : isBusy
-                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                              : 'bg-white/[0.05] border-white/10 text-text-secondary'
-                          }`}
-                        >
-                          {driver.status}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-1 text-[11px] text-text-secondary">
-                        <div>
-                          <span className="text-text-muted">Vehicle:</span>{' '}
-                          <span className="text-text-primary font-medium">{driver.vehicleType}</span>
-                        </div>
-                        <div>
-                          <span className="text-text-muted">Plate:</span>{' '}
-                          <span className="font-mono text-text-primary font-semibold">{driver.plate}</span>
-                        </div>
-                        <div className="col-span-2 flex items-center justify-between pt-1 border-t border-white/[0.04]">
-                          <span className="flex items-center gap-1 font-mono text-[10px] text-text-muted">
-                            <MapPin className="w-3 h-3 text-accent shrink-0" />
-                            {Array.isArray(driver.location) ? `${driver.location[1].toFixed(4)}, ${driver.location[0].toFixed(4)}` : 'Belagavi Hub'}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-accent font-mono text-[10px]">
-                            {driver.zoneCode}
-                          </span>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  );
-                })}
-              </div>
-            )}
-          </GlassPanel>
+          {/* Sector Switcher using ride-segment */}
+          <div className="ride-segment" aria-label="Sector filter">
+            {belagaviSectors.map((sector) => (
+              <button
+                key={sector.id}
+                type="button"
+                aria-pressed={selectedZone === sector.id}
+                onClick={() => setSelectedZone(sector.id)}
+                className="text-xs py-1.5 px-3 min-h-[36px]"
+              >
+                {sector.id}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Right 1 Col: Live Ride Feed */}
-        <div className="space-y-4">
-          <GlassPanel className="p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-              <div>
-                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-accent" />
-                  Live Ride Stream
-                </h3>
-                <p className="text-xs text-text-secondary">Trips requested today</p>
-              </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-accent/20 text-accent font-semibold font-mono">
-                {analytics?.recentRides?.length || 0}
-              </span>
-            </div>
-
-            {(!analytics?.recentRides || analytics.recentRides.length === 0) ? (
-              <p className="py-8 text-center text-xs text-text-secondary">
-                No ride requests recorded yet today. Use the "Book Ride" view to create passenger requests.
-              </p>
-            ) : (
-              <div className="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
-                {analytics.recentRides.map((ride, idx) => {
-                  const statusColors = {
-                    COMPLETED: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-                    ACCEPTED: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
-                    ARRIVING: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
-                    ONGOING: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-                    REQUESTED: 'text-accent bg-accent/10 border-accent/30',
-                    CANCELLED: 'text-rose-400 bg-rose-500/10 border-rose-500/30'
-                  };
-
-                  return (
-                    <div
-                      key={ride.rideId || idx}
-                      className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs space-y-1.5 hover:border-white/[0.12] transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[11px] font-bold text-text-primary truncate max-w-[130px]">
-                          {ride.rideId}
-                        </span>
-                        <span
-                          className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${
-                            statusColors[ride.status] || 'text-text-secondary border-white/10'
-                          }`}
-                        >
-                          {ride.status}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-text-secondary">
-                        <span className="capitalize">{ride.routeType} route • {ride.passengerCount} pax</span>
-                        <span className="font-mono font-bold text-accent">{ride.zoneCode}</span>
-                      </div>
-
-                      {ride.createdAt && (
-                        <div className="text-[10px] text-text-muted">
-                          {new Date(ride.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </div>
-                      )}
+        {filteredDrivers.length === 0 ? (
+          <p className="py-8 text-center text-sm text-text-secondary">
+            No active drivers detected in sector <span className="font-mono text-accent">{selectedZone}</span>.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            {filteredDrivers.map((driver) => {
+              const isAvailable = driver.status === 'AVAILABLE';
+              const isBusy = driver.status === 'BUSY' || driver.status === 'RESERVED';
+              return (
+                <GlassCard
+                  key={driver.id || driver.driverId}
+                  className="p-4 space-y-2 hover:border-accent/30 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${isAvailable ? 'bg-emerald-400' : isBusy ? 'bg-amber-400' : 'bg-slate-500'}`} />
+                      <span className="font-bold text-xs text-text-primary">
+                        {driver.name}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </GlassPanel>
-        </div>
-      </div>
+                    <span
+                      className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border ${
+                        isAvailable
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : isBusy
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                          : 'bg-white/[0.05] border-white/10 text-text-secondary'
+                      }`}
+                    >
+                      {driver.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1 text-[11px] text-text-secondary">
+                    <div>
+                      <span className="text-text-muted">Vehicle:</span>{' '}
+                      <span className="text-text-primary font-medium">{driver.vehicleType}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Plate:</span>{' '}
+                      <span className="font-mono text-text-primary font-semibold">{driver.plate}</span>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between pt-1 border-t border-white/[0.04]">
+                      <span className="flex items-center gap-1 font-mono text-[10px] text-text-muted">
+                        <MapPin className="w-3 h-3 text-accent shrink-0" />
+                        {Array.isArray(driver.location) ? `${driver.location[1].toFixed(4)}, ${driver.location[0].toFixed(4)}` : 'Belagavi Hub'}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-accent font-mono text-[10px]">
+                        {driver.zoneCode}
+                      </span>
+                    </div>
+                  </div>
+                </GlassCard>
+              );
+            })}
+          </div>
+        )}
+      </GlassPanel>
     </section>
   );
 }

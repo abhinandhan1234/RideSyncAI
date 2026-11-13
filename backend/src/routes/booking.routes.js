@@ -2,7 +2,7 @@ import {Router} from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
-import {User,Driver,Ride,RideOffer,RideEvent,Zone} from '../models/index.js';
+import {User,Driver,Ride,RideOffer,RideEvent,Zone,DriverApplication} from '../models/index.js';
 import {distanceKm} from '../services/matching/rank.js';
 import {dispatch,release,record,expireOffers} from '../services/matching/dispatch.js';
 const router=Router();
@@ -63,4 +63,93 @@ router.get('/admin/analytics',run(async(req,res)=>{
     recentRides:allRides.slice(0,15)
   });
 }));
+
+router.get('/admin/applications', run(async (req, res) => {
+  let applications = [];
+  try {
+    applications = await DriverApplication.find({}).sort({ createdAt: -1 }).lean();
+  } catch {}
+
+  const cancelledRides = await Ride.find({ status: 'CANCELLED' })
+    .sort({ cancelledAt: -1, createdAt: -1 })
+    .limit(30)
+    .lean();
+
+  res.json({
+    applications: applications.map(a => ({
+      id: a._id.toString(),
+      name: a.name,
+      email: a.email,
+      phone: a.phone,
+      vehicleType: a.vehicleType,
+      plate: a.plate,
+      zoneCode: a.zoneCode,
+      status: a.status,
+      submittedAt: a.submittedAt || a.createdAt,
+      reviewedAt: a.reviewedAt
+    })),
+    cancelledRides: cancelledRides.map(r => ({
+      rideId: r._id.toString(),
+      status: r.status,
+      pickupZoneCode: r.pickupZoneCode || 'Z01',
+      fare: r.fare?.total || 120,
+      cancelledAt: r.cancelledAt || r.updatedAt || r.createdAt,
+      passengerCount: r.passengerCount || 1,
+      reason: r.metadata?.cancellationReason || 'Passenger cancelled prior to pickup'
+    })),
+    counts: {
+      totalApplications: applications.length,
+      processing: applications.filter(a => a.status === 'PROCESSING').length,
+      approved: applications.filter(a => a.status === 'APPROVED').length,
+      rejected: applications.filter(a => a.status === 'REJECTED').length,
+      cancelledRides: cancelledRides.length
+    }
+  });
+}));
+
+router.patch('/admin/applications/:id', run(async (req, res) => {
+  const { status } = req.body;
+  if (!['PROCESSING', 'APPROVED', 'REJECTED'].includes(status)) {
+    throw fail(400, 'VALIDATION_ERROR', 'status must be PROCESSING, APPROVED, or REJECTED');
+  }
+
+  const appDoc = await DriverApplication.findByIdAndUpdate(
+    req.params.id,
+    { $set: { status, reviewedAt: new Date() } },
+    { new: true }
+  );
+  if (!appDoc) throw fail(404, 'NOT_FOUND', 'Application not found');
+
+  if (status === 'APPROVED') {
+    try {
+      await Driver.findOneAndUpdate(
+        { externalId: `APP-${appDoc.plate}` },
+        {
+          $set: {
+            externalId: `APP-${appDoc.plate}`,
+            name: appDoc.name,
+            location: { type: 'Point', coordinates: [74.4977, 15.8497] },
+            zoneCode: appDoc.zoneCode || 'Z01',
+            status: 'AVAILABLE',
+            vehicle: { type: appDoc.vehicleType || 'CAR', plate: appDoc.plate, capacity: 4 },
+            idleSince: new Date(),
+            lastLocationAt: new Date(),
+            acceptanceRate: 0.9
+          }
+        },
+        { upsert: true }
+      );
+    } catch (e) {
+      console.warn('Driver provisioning error:', e.message);
+    }
+  }
+
+  res.json({
+    id: appDoc._id.toString(),
+    status: appDoc.status,
+    name: appDoc.name,
+    reviewedAt: appDoc.reviewedAt
+  });
+}));
+
 export default router;

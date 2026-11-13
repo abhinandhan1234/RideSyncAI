@@ -6,6 +6,7 @@ import RoleLogin from './pages/auth/RoleLogin';
 import { RideProvider } from './context/RideContext';
 import CaptainDashboard from './pages/CaptainDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminApplications from './pages/AdminApplications';
 import Booking from './pages/Booking';
 import Tracking from './pages/Tracking';
 import Activity from './pages/Activity';
@@ -33,11 +34,13 @@ export function App() {
       <Suspense fallback={<div role="status" style={{padding:80}}>Loading experience…</div>}>
         <Routes>
           <Route path="/" element={<CinematicLanding />} />
+          <Route path="/login" element={<Navigate to="/login/admin" replace />} />
           <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
           <Route path="/login/captain" element={<RoleLogin role="captain" />} />
           <Route path="/login/admin" element={<RoleLogin role="admin" />} />
           <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
           <Route path="/admin" element={<ApplicationPage><AdminDashboard /></ApplicationPage>} />
+          <Route path="/admin/applications" element={<ApplicationPage><AdminApplications /></ApplicationPage>} />
           <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
           <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
           <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />

@@ -10,6 +10,7 @@ const MODEL_PATH = '/models/honda-taxi.glb';
  * wheel spin rigging, headlight/taillight emissive controls, and ground alignment.
  */
 export const TaxiModel = ({
+  scale = 1.32,
   headlightsOn = true,
   isDriving = false,
   wheelSpeed = 10,
@@ -175,7 +176,7 @@ export const TaxiModel = ({
   });
 
   return (
-    <group ref={groupRef} {...props} dispose={null}>
+    <group ref={groupRef} scale={scale} {...props} dispose={null}>
       {/* 3D Model Instance centered */}
       <primitive object={scene} />
 
@@ -206,10 +207,10 @@ export const TaxiModel = ({
       {/* Subtle Taxi-Yellow Underglow */}
       {underglow && (
         <pointLight
-          position={[0, 0.15, 0]}
-          intensity={1.2}
+          position={[0, 0.18, 0]}
+          intensity={1.5}
           color="#F59E0B"
-          distance={3}
+          distance={3.8}
         />
       )}
     </group>
@@ -219,3 +220,4 @@ export const TaxiModel = ({
 useGLTF.preload(MODEL_PATH);
 
 export default TaxiModel;
+

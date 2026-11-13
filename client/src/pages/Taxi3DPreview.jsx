@@ -64,7 +64,7 @@ export const Taxi3DPreview = () => {
       </div>
 
       {/* Main 3D Canvas Showcase Container */}
-      <div className="relative w-full h-[380px] sm:h-[500px] lg:h-[540px] rounded-3xl overflow-hidden border border-white/[0.16] shadow-glass-lg bg-gradient-to-b from-slate-950/80 via-slate-900/60 to-bg-deep">
+      <div className="relative w-full h-[420px] sm:h-[520px] lg:h-[560px] rounded-3xl overflow-hidden border border-white/[0.16] shadow-glass-lg bg-gradient-to-b from-slate-950/80 via-slate-900/60 to-bg-deep">
         {/* Background Radial Light Accent */}
         <div className="pointer-events-none absolute inset-0 bg-radial-glow opacity-30" />
 
@@ -392,3 +392,4 @@ export const Taxi3DPreview = () => {
 };
 
 export default Taxi3DPreview;
+

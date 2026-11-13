@@ -4,31 +4,32 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 export const CAMERA_PRESETS = {
+  // Enhanced front 3/4 commercial hero perspective showcasing front grille, hood, taxi sign & rims
   cinematic: {
-    position: [3.8, 1.8, 4.2],
-    target: [0, 0.4, 0],
+    position: [3.4, 1.45, 3.8],
+    target: [0, 0.65, 0.15],
   },
   front: {
-    position: [0, 1.2, 4.8],
-    target: [0, 0.5, 0],
+    position: [0, 1.25, 4.8],
+    target: [0, 0.65, 0.15],
   },
   side: {
-    position: [5.2, 1.0, 0],
-    target: [0, 0.5, 0],
+    position: [5.4, 1.15, 0],
+    target: [0, 0.65, 0],
   },
   cockpit: {
-    position: [0.35, 1.15, 0.2],
-    target: [0.35, 1.0, 3.5],
+    position: [0.38, 1.35, 0.25],
+    target: [0.38, 1.1, 4.0],
   },
   top: {
-    position: [0.1, 7.5, 0.1],
+    position: [0.1, 8.2, 0.1],
     target: [0, 0, 0],
   },
 };
 
 /**
- * TaxiCamera: Handles smooth camera transition animations between presets
- * while retaining interactive OrbitControls for touch/mouse manipulation.
+ * TaxiCamera: Handles smooth camera transition animations between presets,
+ * dynamic responsive mobile portrait framing, and interactive OrbitControls.
  */
 export const TaxiCamera = ({
   preset = 'cinematic',
@@ -37,29 +38,40 @@ export const TaxiCamera = ({
   enableControls = true,
 }) => {
   const controlsRef = useRef();
-  const { camera } = useThree();
+  const { camera, size } = useThree();
 
   const targetPos = useRef(new THREE.Vector3(...CAMERA_PRESETS.cinematic.position));
   const targetLook = useRef(new THREE.Vector3(...CAMERA_PRESETS.cinematic.target));
   const isTransitioning = useRef(true);
 
+  // Compute responsive mobile portrait scaling factor
+  // On smartphones (aspect < 1), scale distance so the full car remains visible
+  const aspect = size.width / Math.max(1, size.height);
+  const mobileScaleFactor = aspect < 1 ? Math.min(1.45, Math.max(1.0, 0.95 / aspect)) : 1.0;
+
   useEffect(() => {
     const selected = CAMERA_PRESETS[preset] || CAMERA_PRESETS.cinematic;
-    targetPos.current.set(...selected.position);
+    
+    // Scale base position by mobile responsive factor for portrait screens
+    targetPos.current.set(
+      selected.position[0] * mobileScaleFactor,
+      selected.position[1] * (aspect < 1 ? 1.08 : 1.0),
+      selected.position[2] * mobileScaleFactor
+    );
     targetLook.current.set(...selected.target);
     isTransitioning.current = true;
-  }, [preset]);
+  }, [preset, mobileScaleFactor, aspect]);
 
   useFrame((_, delta) => {
     if (isTransitioning.current && controlsRef.current) {
       // Smooth lerp camera position
-      camera.position.lerp(targetPos.current, 4 * delta);
-      controlsRef.current.target.lerp(targetLook.current, 4 * delta);
+      camera.position.lerp(targetPos.current, 4.5 * delta);
+      controlsRef.current.target.lerp(targetLook.current, 4.5 * delta);
 
       // Stop transition when close enough
       if (
-        camera.position.distanceTo(targetPos.current) < 0.05 &&
-        controlsRef.current.target.distanceTo(targetLook.current) < 0.05
+        camera.position.distanceTo(targetPos.current) < 0.04 &&
+        controlsRef.current.target.distanceTo(targetLook.current) < 0.04
       ) {
         isTransitioning.current = false;
       }
@@ -74,10 +86,10 @@ export const TaxiCamera = ({
       autoRotateSpeed={autoRotateSpeed}
       enableDamping
       dampingFactor={0.06}
-      minDistance={1.8}
-      maxDistance={12}
+      minDistance={2.0}
+      maxDistance={14}
       maxPolarAngle={Math.PI / 2 - 0.02} // Do not dip below ground
-      minPolarAngle={0.1}
+      minPolarAngle={0.08}
       makeDefault
     />
   );

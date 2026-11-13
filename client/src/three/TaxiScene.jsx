@@ -9,8 +9,8 @@ import TaxiCamera from './TaxiCamera';
  */
 const ThreeLoadingFallback = () => {
   return (
-    <mesh position={[0, 0.5, 0]}>
-      <boxGeometry args={[0.5, 0.5, 0.5]} />
+    <mesh position={[0, 0.65, 0]}>
+      <boxGeometry args={[0.6, 0.6, 0.6]} />
       <meshStandardMaterial color="#F59E0B" wireframe />
     </mesh>
   );
@@ -37,7 +37,7 @@ export const TaxiScene = ({
       <Canvas
         shadows
         dpr={[1, 2]} // Balanced crispness and smartphone GPU performance
-        camera={{ position: [3.8, 1.8, 4.2], fov: 42 }}
+        camera={{ position: [3.4, 1.45, 3.8], fov: 40 }}
         gl={{
           antialias: true,
           alpha: true,
@@ -46,34 +46,35 @@ export const TaxiScene = ({
         className="w-full h-full"
       >
         {/* Studio Ambient & Key Lighting */}
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.45} />
 
-        {/* Key Light with Cast Shadow */}
+        {/* Key Sunlight with Cast Shadow covering full enlarged vehicle length */}
         <directionalLight
-          position={[6, 8, 5]}
-          intensity={1.6}
+          position={[7, 10, 6]}
+          intensity={1.8}
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-camera-near={0.5}
           shadow-camera-far={25}
-          shadow-camera-left={-4}
-          shadow-camera-right={4}
-          shadow-camera-top={4}
-          shadow-camera-bottom={-4}
-          shadow-bias={-0.0005}
+          shadow-camera-left={-5.5}
+          shadow-camera-right={5.5}
+          shadow-camera-top={5.5}
+          shadow-camera-bottom={-5.5}
+          shadow-bias={-0.0003}
         />
 
-        {/* Rim & Fill Lights */}
-        <directionalLight position={[-6, 4, -4]} intensity={0.7} color="#94A3B8" />
-        <directionalLight position={[0, 6, -6]} intensity={0.5} color="#38BDF8" />
+        {/* Rim & Fill Lights for automotive edge reflections */}
+        <directionalLight position={[-7, 5, -4]} intensity={0.8} color="#94A3B8" />
+        <directionalLight position={[0, 6, -6]} intensity={0.6} color="#38BDF8" />
 
         <Suspense fallback={<ThreeLoadingFallback />}>
           {/* Environment Studio Reflection Map */}
           <Environment preset="city" />
 
-          {/* Actual Honda Taxi Model */}
+          {/* Actual Honda Taxi Model with Enlarged Hero Size */}
           <TaxiModel
+            scale={1.32}
             headlightsOn={headlightsOn}
             isDriving={isDriving}
             wheelSpeed={wheelSpeed}
@@ -82,17 +83,17 @@ export const TaxiScene = ({
             onModelLoaded={onModelLoaded}
           />
 
-          {/* Contact Ground Shadows */}
+          {/* Enhanced Ground Contact Shadows */}
           <ContactShadows
             position={[0, 0, 0]}
-            opacity={0.75}
-            scale={10}
-            blur={2.4}
-            far={3.5}
+            opacity={0.82}
+            scale={13}
+            blur={2.2}
+            far={4.0}
             color="#07090D"
           />
 
-          {/* Interactive & Preset Camera Controls */}
+          {/* Interactive & Preset Camera Controls with Mobile Safe-Framing */}
           <TaxiCamera
             preset={cameraPreset}
             autoRotate={autoRotate}

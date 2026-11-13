@@ -1,0 +1,15 @@
+import mongoose from 'mongoose';
+const {Schema}=mongoose;
+const point=new Schema({type:{type:String,default:'Point'},coordinates:{type:[Number],required:true,validate:v=>v.length===2&&v[0]>=-180&&v[0]<=180&&v[1]>=-90&&v[1]<=90}},{_id:false});
+const user=new Schema({displayName:String,email:{type:String,unique:true,lowercase:true},phone:String,passwordHash:{type:String,select:false},role:String,isSynthetic:Boolean},{timestamps:true});
+const driver=new Schema({userId:{type:Schema.Types.ObjectId,unique:true},externalId:{type:String,unique:true,sparse:true},location:point,zoneCode:String,status:String,activeRideId:Schema.Types.ObjectId,vehicle:{type:{type:String},capacity:Number,plate:String},acceptanceRate:Number,currentWorkload:Number,idleSince:Date,lastLocationAt:Date,acceptedOffers:Number,totalOffers:Number,completedRides:Number},{timestamps:true});driver.index({location:'2dsphere'});
+const ride=new Schema({sourceId:String,passengerId:Schema.Types.ObjectId,driverId:Schema.Types.ObjectId,pickup:point,dropoff:point,pickupZoneCode:String,dropoffZoneCode:String,passengerCount:Number,requestedVehicleType:String,routeType:String,poolingRequested:Boolean,status:String,source:String,metadata:Schema.Types.Mixed,activeOfferId:Schema.Types.ObjectId,attemptCount:{type:Number,default:0},pickupEtaMin:Number,distanceKm:Number,estimatedDurationMin:Number,fare:Schema.Types.Mixed,requestedAt:Date,acceptedAt:Date,arrivedAt:Date,startedAt:Date,completedAt:Date,cancelledAt:Date},{timestamps:true});ride.index({pickup:'2dsphere'});ride.index({sourceId:1},{unique:true,sparse:true});
+const offer=new Schema({rideId:Schema.Types.ObjectId,driverId:Schema.Types.ObjectId,attempt:Number,status:String,score:Number,scoreFactors:Schema.Types.Mixed,distanceKm:Number,estimatedPickupMin:Number,offeredAt:Date,expiresAt:Date,respondedAt:Date},{timestamps:true});offer.index({rideId:1,attempt:1},{unique:true});
+const event=new Schema({rideId:Schema.Types.ObjectId,type:String,actor:String,actorUserId:Schema.Types.ObjectId,details:Schema.Types.Mixed,happenedAt:{type:Date,default:Date.now}});
+const zone=new Schema({code:{type:String,unique:true},name:String,center:point});zone.index({center:'2dsphere'});
+export const User=mongoose.model('User',user,'users');
+export const Driver=mongoose.model('Driver',driver,'drivers');
+export const Ride=mongoose.model('Ride',ride,'rides');
+export const RideOffer=mongoose.model('RideOffer',offer,'ride_offers');
+export const RideEvent=mongoose.model('RideEvent',event,'ride_events');
+export const Zone=mongoose.model('Zone',zone,'zones');

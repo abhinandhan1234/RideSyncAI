@@ -1,0 +1,163 @@
+{
+  "source": "SYNTHETIC",
+  "zoneIntelligence": {
+    "hour": "2026-11-13 09:00",
+    "zones": [
+      {
+        "zone": "Z01",
+        "demand": 17.902,
+        "available": 5,
+        "required": 5,
+        "surge": 1,
+        "deficit": 0
+      },
+      {
+        "zone": "Z02",
+        "demand": 17.49,
+        "available": 4,
+        "required": 5,
+        "surge": 1.15,
+        "deficit": 1
+      },
+      {
+        "zone": "Z03",
+        "demand": 11.276,
+        "available": 4,
+        "required": 3,
+        "surge": 1,
+        "deficit": -1
+      },
+      {
+        "zone": "Z04",
+        "demand": 10.122,
+        "available": 5,
+        "required": 3,
+        "surge": 1,
+        "deficit": -2
+      },
+      {
+        "zone": "Z05",
+        "demand": 12.662,
+        "available": 3,
+        "required": 4,
+        "surge": 1.15,
+        "deficit": 1
+      },
+      {
+        "zone": "Z06",
+        "demand": 15.041,
+        "available": 3,
+        "required": 4,
+        "surge": 1.15,
+        "deficit": 1
+      },
+      {
+        "zone": "Z07",
+        "demand": 11.11,
+        "available": 3,
+        "required": 3,
+        "surge": 1,
+        "deficit": 0
+      },
+      {
+        "zone": "Z08",
+        "demand": 11.863,
+        "available": 5,
+        "required": 3,
+        "surge": 1,
+        "deficit": -2
+      }
+    ],
+    "reposition": [
+      {
+        "origin": "Z04",
+        "target": "Z02",
+        "drivers": 1,
+        "reason": "Z04 has 2 spare; Z02 needs 1"
+      },
+      {
+        "origin": "Z08",
+        "target": "Z05",
+        "drivers": 1,
+        "reason": "Z08 has 2 spare; Z05 needs 1"
+      },
+      {
+        "origin": "Z03",
+        "target": "Z06",
+        "drivers": 1,
+        "reason": "Z03 has 1 spare; Z06 needs 1"
+      }
+    ]
+  },
+  "allocation": {
+    "ranked": [
+      {
+        "driver": "A",
+        "etaMinutes": 2.0,
+        "roadKm": 1.2,
+        "idleMinutes": 60,
+        "completedTrips": 0,
+        "score": 0.8142857142857144
+      },
+      {
+        "driver": "C",
+        "etaMinutes": 1.0,
+        "roadKm": 0.8,
+        "idleMinutes": 0,
+        "completedTrips": 5,
+        "score": 0.5583333333333335
+      }
+    ],
+    "selected": {
+      "driver": "A",
+      "etaMinutes": 2.0,
+      "roadKm": 1.2,
+      "idleMinutes": 60,
+      "completedTrips": 0,
+      "score": 0.8142857142857144
+    },
+    "nearest": {
+      "driver": "C",
+      "etaMinutes": 1.0,
+      "roadKm": 0.8,
+      "idleMinutes": 0,
+      "completedTrips": 5,
+      "score": 0.5583333333333335
+    },
+    "extraPickupMinutes": 1.0
+  },
+  "pool": {
+    "feasible": true,
+    "separate": {
+      "minutes": 3.0,
+      "fareINR": 114.8
+    },
+    "pooled": {
+      "order": [
+        "pickup1",
+        "pickup2",
+        "drop1",
+        "drop2"
+      ],
+      "minutes": 2.0,
+      "distanceKm": 1.6,
+      "fareINR": 63.2,
+      "passengers": [
+        {
+          "waitMinutes": 0,
+          "rideMinutes": 2.0,
+          "separateMinutes": 2.0,
+          "separateFareINR": 63.2,
+          "pooledFareINR": 34.79
+        },
+        {
+          "waitMinutes": 1.0,
+          "rideMinutes": 1.0,
+          "separateMinutes": 1.0,
+          "separateFareINR": 51.6,
+          "pooledFareINR": 28.41
+        }
+      ]
+    }
+  }
+}

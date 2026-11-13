@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d6" for="edge" attr.name="speed_kph" attr.type="long" />
+  <key id="d5" for="edge" attr.name="length" attr.type="long" />
+  <key id="d4" for="node" attr.name="y" attr.type="double" />
+  <key id="d3" for="node" attr.name="x" attr.type="double" />
+  <key id="d2" for="graph" attr.name="source" attr.type="string" />
+  <key id="d1" for="graph" attr.name="network_type" attr.type="string" />
+  <key id="d0" for="graph" attr.name="crs" attr.type="string" />
+  <graph edgedefault="directed">
+    <node id="A">
+      <data key="d3">74.5</data>
+      <data key="d4">15.85</data>
+    </node>
+    <node id="B">
+      <data key="d3">74.505</data>
+      <data key="d4">15.851</data>
+    </node>
+    <node id="C">
+      <data key="d3">74.505</data>
+      <data key="d4">15.854</data>
+    </node>
+    <node id="D">
+      <data key="d3">74.51</data>
+      <data key="d4">15.85</data>
+    </node>
+    <node id="E">
+      <data key="d3">74.512</data>
+      <data key="d4">15.855</data>
+    </node>
+    <node id="F">
+      <data key="d3">74.513</data>
+      <data key="d4">15.855</data>
+    </node>
+    <edge source="A" target="B" id="0">
+      <data key="d5">600</data>
+      <data key="d6">10</data>
+    </edge>
+    <edge source="A" target="C" id="0">
+      <data key="d5">800</data>
+      <data key="d6">48</data>
+    </edge>
+    <edge source="B" target="D" id="0">
+      <data key="d5">600</data>
+      <data key="d6">10</data>
+    </edge>
+    <edge source="C" target="D" id="0">
+      <data key="d5">800</data>
+      <data key="d6">48</data>
+    </edge>
+    <edge source="E" target="F" id="0">
+      <data key="d5">120</data>
+      <data key="d6">20</data>
+    </edge>
+    <data key="d0">EPSG:4326</data>
+    <data key="d1">drive</data>
+    <data key="d2">SYNTHETIC</data>
+  </graph>
+</graphml>

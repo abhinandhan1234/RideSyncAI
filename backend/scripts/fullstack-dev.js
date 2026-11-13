@@ -1,0 +1,20 @@
+// Development only. Each invocation uses its own disposable MongoDB replica set.
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { randomBytes } from 'node:crypto';
+import { spawn } from 'node:child_process';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import {Driver,User,Zone} from '../src/models/index.js';
+const mongo=await MongoMemoryReplSet.create({replSet:{count:1}});
+const uri=mongo.getUri('ridesync_fullstack_dev');
+await mongoose.connect(uri);
+const password=randomBytes(12).toString('hex');
+const location={type:'Point',coordinates:[74.5,15.85]};
+await Zone.create({code:'Z01',name:'Development pickup zone',center:location});
+const captain=await User.create({displayName:'Development Captain',email:'captain@example.invalid',role:'DRIVER',isSynthetic:true,passwordHash:await bcrypt.hash(password,10)});
+await Driver.create({externalId:'DEV-CAB',userId:captain.id,zoneCode:'Z01',status:'AVAILABLE',location,vehicle:{type:'CAR',capacity:4}});
+await mongoose.disconnect();
+console.log('Disposable captain login: captain@example.invalid / '+password);
+const child=spawn(process.execPath,['src/server.js'],{stdio:'inherit',env:{...process.env,MONGODB_URI:uri,JWT_SECRET:randomBytes(32).toString('hex'),ENABLE_BOOKING_DEMO:'false'}});
+for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>child.kill(signal));
+child.once('exit',async code=>{await mongo.stop();process.exitCode=code||0;});

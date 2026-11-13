@@ -32,4 +32,3 @@ export function cashfreeWebhookPayloadDigest(rawBody){
   if(!Buffer.isBuffer(rawBody))throw new TypeError('Raw webhook body is required');
   return createHash('sha256').update(rawBody).digest('hex');
 }
-

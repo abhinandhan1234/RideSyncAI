@@ -36,7 +36,7 @@ export const TopHeader = ({ className = '' }) => {
 
           <div className="flex flex-col">
             <span className="text-sm font-bold tracking-tight text-text-primary flex items-center gap-1.5">
-              RideSync <span className="text-accent">AI</span>
+              IntelliMarg
             </span>
             <div className="flex items-center gap-1 text-[11px] text-text-secondary">
               <MapPin className="w-3 h-3 text-accent shrink-0" />

@@ -1,0 +1,26 @@
+{
+  "version": "canonical-v1",
+  "source": "SYNTHETIC",
+  "features": [
+    "zone_id",
+    "hour",
+    "weekday"
+  ],
+  "timezone": "Asia/Kolkata",
+  "sha256": "416e8135fc45712062f0f196a2efa4fa7534a96fa02b0ec2dd68cf487aac8fcd",
+  "sklearn": "1.9.0",
+  "trainRows": 4032,
+  "holdoutRows": 1344,
+  "trainEnd": "2026-11-04 23:00:00",
+  "fittedThrough": "2026-11-11 23:00:00",
+  "metrics": {
+    "prediction": {
+      "mae": 1.5635171950597677,
+      "rmse": 2.1190263449208375
+    },
+    "baseline": {
+      "mae": 1.6320861678004532,
+      "rmse": 2.244044987577927
+    }
+  }
+}

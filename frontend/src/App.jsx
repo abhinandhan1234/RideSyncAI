@@ -10,6 +10,8 @@ import Tracking from './pages/Tracking';
 import Activity from './pages/Activity';
 import Profile from './pages/Profile';
 import DesignSystemPreview from './pages/DesignSystemPreview';
+import {SarathiDashboard,SarathiLogin,SarathiProfile,SarathiRegister,SarathiVerification} from './pages/sarathi/SarathiPages';
+import SarathiAdmin from './pages/sarathi/SarathiAdmin';
 const Taxi3DPreview = lazy(() => import('./pages/Taxi3DPreview'));
 function ScrollReset() {
   const { pathname, hash } = useLocation();
@@ -23,6 +25,8 @@ function ScrollReset() {
   return null;
 }
 const ApplicationPage = ({children}) => <AppShell>{children}</AppShell>;
+function SarathiRoute({children}){const {auth}=useRide();if(!auth)return <Navigate to="/sarathi/login" replace/>;if(auth.user?.role!=='driver')return <Navigate to="/book" replace/>;return children;}
+function PassengerRoute({children}){const {auth}=useRide();if(auth?.user?.role==='driver')return <Navigate to="/sarathi/dashboard" replace/>;return children;}
 
 export function App() {
   return (
@@ -34,12 +38,18 @@ export function App() {
           <Route path="/" element={<CinematicLanding />} />
           <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
           <Route path="/login/captain" element={<RoleLogin role="captain" />} />
-          <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
-          <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
-          <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
-          <Route path="/ride/:rideId" element={<ApplicationPage><Tracking /></ApplicationPage>} />
-          <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
-          <Route path="/profile" element={<ApplicationPage><Profile /></ApplicationPage>} />
+          <Route path="/captain" element={<SarathiRoute><ApplicationPage><CaptainDashboard /></ApplicationPage></SarathiRoute>} />
+          <Route path="/sarathi/login" element={<SarathiLogin/>} />
+          <Route path="/sarathi/register" element={<SarathiRegister/>} />
+          <Route path="/sarathi/dashboard" element={<SarathiRoute><SarathiDashboard/></SarathiRoute>} />
+          <Route path="/sarathi/profile" element={<SarathiRoute><SarathiProfile/></SarathiRoute>} />
+          <Route path="/sarathi/verification" element={<SarathiRoute><SarathiVerification/></SarathiRoute>} />
+          <Route path="/sarathi/admin" element={<SarathiAdmin/>} />
+          <Route path="/book" element={<PassengerRoute><ApplicationPage><Booking /></ApplicationPage></PassengerRoute>} />
+          <Route path="/track" element={<PassengerRoute><ApplicationPage><Tracking /></ApplicationPage></PassengerRoute>} />
+          <Route path="/ride/:rideId" element={<PassengerRoute><ApplicationPage><Tracking /></ApplicationPage></PassengerRoute>} />
+          <Route path="/activity" element={<PassengerRoute><ApplicationPage><Activity /></ApplicationPage></PassengerRoute>} />
+          <Route path="/profile" element={<PassengerRoute><ApplicationPage><Profile /></ApplicationPage></PassengerRoute>} />
           <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />
           <Route path="/3d" element={<ApplicationPage><Taxi3DPreview /></ApplicationPage>} />
           <Route path="*" element={<Navigate to="/" replace />} />

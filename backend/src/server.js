@@ -22,6 +22,7 @@ const app = createApp(service);
 const stopWorker = demoEnabled ? startBookingWorker(service) : () => {};
 
 const PORT = process.env.PORT || 5002;
+const HOST = process.env.HOST || '0.0.0.0';
 
 const server = http.createServer(app);
 const io = attachSockets(server, app);
@@ -34,8 +35,8 @@ const expiryTimer = setInterval(async () => {
 }, 1000);
 expiryTimer.unref();
 
-server.listen(PORT, () => {
-  console.log(`RideSync AI Backend listening on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`RideSync AI Backend listening on http://${HOST}:${PORT}`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {

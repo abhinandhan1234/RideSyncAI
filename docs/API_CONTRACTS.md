@@ -6,6 +6,11 @@
 > **Base URL:** `http://localhost:3001/api`  
 > **Authentication:** Bearer JWT in `Authorization` header for all protected routes.
 
+> **Implementation addendum (2026-11-14):** The current server listens on
+> `http://localhost:5002/api`. The historical proposed contracts below do not
+> fully describe the runtime API. In particular, `/auth/register` is
+> passenger-only; Sarathi uses the separate contracts at the end of this file.
+
 ---
 
 ## Conventions
@@ -612,3 +617,91 @@ Driver-only. Accepts `{ "latitude": 15.85, "longitude": 74.50 }`, validates WGS8
 Passenger-only. Accepts an optional reason from `Changed my plans`, `Booked by mistake`, `Driver taking too long`, `Found another ride`, or `Other`. Cancellation atomically claims only eligible pre-completion states, records the reason/time, closes a pending offer, releases the driver only when still assigned to that ride, and notifies the driver's user room. The existing POST cancellation route remains as a compatibility alias.
 
 The driver lifecycle now supports `ACCEPTED → ARRIVING → ARRIVED → ONGOING → COMPLETED`; the passenger tracking page refreshes backend state every two seconds and stops at a terminal state.
+
+---
+
+## Current Sarathi implementation
+
+All routes below are implemented in `backend/src/routes/sarathi.routes.js` unless
+marked as an existing driver route. Protected Sarathi routes require a `DRIVER`
+JWT. Admin routes require an `ADMIN` JWT. The role names in signed tokens are
+uppercase.
+
+### `POST /api/sarathi/register`
+
+Public. Accepts `fullName`, `phone`, `email`, `password`, `address`, `city`,
+`vehicleCategory` (`BIKE`, `AUTO`, `CAR`), `manufacturer`, `model`,
+`registrationNumber`, and optional `vehicleColor`, `vehicleRcDetails`, `upiId`,
+`upiAccountHolder`, and `preferredPaymentMethod` (`UPI`, `CASH`, `BOTH`). Phone
+and email are unique. Passwords use bcrypt. Creates an offline `DRIVER` and
+`PENDING_REVIEW` application. Returns a JWT and profile summary (`201`). Duplicate
+phone/email returns `409`.
+
+### `POST /api/sarathi/login`
+
+Public. Accepts `phone` and `password`, returns `{ accessToken, user, driver }`.
+Invalid credentials return `401`.
+
+### `GET|PATCH /api/sarathi/profile`
+
+Driver-only. GET returns the authenticated user's name, email, phone, approval
+and availability state, personal profile, document verification states, vehicle,
+payment receiving details, and active ride ID. PATCH accepts only the explicit
+personal, vehicle, and payment fields rendered by the portal. UPI IDs are
+validated. The response contains the saved driver summary.
+
+### Photo upload and removal
+
+- `POST /api/sarathi/upload/profile-photo`
+- `POST /api/sarathi/upload/vehicle-photo`
+- `DELETE /api/sarathi/upload/profile-photo`
+- `DELETE /api/sarathi/upload/vehicle-photo`
+
+POST accepts `{ "dataUrl": "data:image/jpeg;base64,..." }`; JPEG, PNG, and WebP
+are allowed, the decoded image must match its declared type and be at most 2 MB.
+Files are written under ignored `backend/uploads/`; MongoDB stores only a URL.
+
+### `PATCH /api/sarathi/availability`
+
+Driver-only. Accepts `{ "availability":"ONLINE", "latitude":15.85,
+"longitude":74.50 }` or `{ "availability":"OFFLINE" }`. Online requires a
+valid GPS point in a configured service zone. No availability change is allowed
+while a ride is active. In production, Online additionally requires admin
+approval and both documents verified by Cashfree in live mode. `ON_TRIP` is set
+when the existing ride lifecycle advances to `ONGOING`; completion restores
+`AVAILABLE`.
+
+### DigiLocker verification
+
+- `POST /api/sarathi/verification/digilocker/start` accepts
+  `{ "documentType":"AADHAAR" }` or `DRIVING_LICENSE`.
+- `GET /api/sarathi/verification/digilocker/status?document=AADHAAR` (or
+  `DRIVING_LICENSE`) reads the independent persisted status.
+- `POST /api/webhooks/cashfree/digilocker` captures the raw JSON bytes before
+  parsing. In demo mode it returns `409`; in live mode without a webhook secret
+  it returns `503`; bad signatures return `401`. After a valid signature it
+  returns `501 LIVE_INTEGRATION_PENDING`; it does not update verification status.
+
+With `DIGILOCKER_MODE=demo`, start records `DEMO_VERIFIED` from provider `DEMO`
+and explicitly says no government document was checked. Demo never sets
+`VERIFIED`. Live start reports missing credentials or the pending integration
+status and makes no Cashfree API call. Callback processing, status/document
+retrieval, webhook idempotency, and live verification promotion remain pending.
+
+### Admin review
+
+- `GET /api/admin/sarathi` lists pending-review and correction-request
+  applications for `ADMIN` only. It omits full document numbers.
+- `PATCH /api/admin/sarathi/:driverId/approval` accepts
+  `{ "status":"APPROVED" }`, or `REJECTED` / `NEEDS_CORRECTION` plus a note.
+
+See [`SARATHI_ADMIN.md`](SARATHI_ADMIN.md) for enabling a trusted admin account.
+Approval is independent of identity verification. Production dispatch retains
+the existing ranked algorithm and adds the live-approved verification filter.
+
+### Existing offer and ride API used by the portal
+
+Sarathi consumes the existing `GET /api/driver/offers`,
+`POST /api/offers/:offerId/respond` with `accept|reject`,
+`GET /api/rides/:rideId`, and `PATCH /api/rides/:rideId/status` endpoints. These
+continue to use the existing driver ownership checks and matching algorithm.

@@ -14,7 +14,7 @@ for (const port of [frontendPort, backendPort]) {
   });
 }
 if(frontendPort===backendPort) throw new Error('Frontend and backend need different ports');
-const env = {...process.env,PORT:String(backendPort),CLIENT_ORIGIN:`http://localhost:${frontendPort}`,VITE_API_PROXY:`http://127.0.0.1:${backendPort}`};
+const env = {...process.env,PORT:String(backendPort),HOST:'0.0.0.0',CLIENT_ORIGIN:`http://localhost:${frontendPort}`,CLIENT_ORIGINS:`http://localhost:${frontendPort},http://127.0.0.1:${frontendPort}`,VITE_API_PROXY:`http://127.0.0.1:${backendPort}`,DIGILOCKER_MODE:process.env.DIGILOCKER_MODE||'demo'};
 const children=[];
 let stopping=false;
 function stop(code=0){
@@ -24,7 +24,7 @@ function stop(code=0){
 }
 for(const [folder,args] of [
   ['backend',[process.argv.includes('--persistent')?'src/server.js':'scripts/demo.js']],
-  ['frontend',['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(frontendPort),'--strictPort']],
+  ['frontend',['node_modules/vite/bin/vite.js','--host','0.0.0.0','--port',String(frontendPort),'--strictPort']],
 ]) {
   const child=spawn(process.execPath,args,{cwd:path.join(root,folder),env,stdio:'inherit'});
   children.push(child);
@@ -32,4 +32,4 @@ for(const [folder,args] of [
   child.on('exit',code=>{if(!stopping)stop(code||0);});
 }
 process.on('SIGINT',()=>stop());process.on('SIGTERM',()=>stop());
-console.log(`\nStarting RideSync locally. Wait for both readiness messages.\nFrontend: http://localhost:${frontendPort}\nBackend: http://localhost:${backendPort}/api/health\nCtrl+C stops the project.\n`);
+console.log(`\nStarting RideSync locally. Wait for both readiness messages.\nFrontend: http://localhost:${frontendPort}\nOn your Wi-Fi network, use http://<laptop-LAN-IP>:${frontendPort}\nBackend: http://localhost:${backendPort}/api/health\nCtrl+C stops the project.\n`);

@@ -6,6 +6,10 @@ import healthRouter from './routes/health.routes.js';
 import { bookingRouter } from './routes/demo.routes.js';
 import authenticatedRouter from './routes/booking.routes.js';
 import { BookingService } from './services/booking.js';
+import sarathiRouter, {adminRouter,webhookRouter} from './routes/sarathi.routes.js';
+import {corsOrigin} from './config/client-origins.js';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 export function createApp(service = new BookingService()) {
   const app = express();
@@ -18,13 +22,13 @@ export function createApp(service = new BookingService()) {
   // Security headers
   app.use(helmet());
 
-  // CORS — allow the configured client origin
-  app.use(
-    cors({
-      origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-      credentials: true,
-    })
-  );
+  app.use(cors({origin:corsOrigin,credentials:true}));
+
+  const uploadDirectory=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../uploads');
+  app.use('/uploads',express.static(uploadDirectory,{fallthrough:false,index:false,dotfiles:'deny',immutable:true,maxAge:'1d'}));
+
+  app.use(express.json({limit:'3mb',verify:(req,_res,buffer)=>{req.rawBody=Buffer.from(buffer);}}));
+  app.use('/api/webhooks',webhookRouter);
 
   // Body parsing
   app.use(express.json());
@@ -33,6 +37,8 @@ export function createApp(service = new BookingService()) {
   app.use('/api/health', healthRouter);
   if (process.env.ENABLE_BOOKING_DEMO === 'true') app.use('/api/demo', bookingRouter(service));
   app.use('/api', authenticatedRouter);
+  app.use('/api/sarathi',sarathiRouter);
+  app.use('/api/admin',adminRouter);
 
   // ── 404 handler ──────────────────────────────────────────────────────────────
   app.use((_req, res) => {

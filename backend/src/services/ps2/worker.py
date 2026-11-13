@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 root = Path(__file__).resolve().parents[4] / "ai-engine"
-for folder in ("phase1","phase2","phase3"):
+for folder in ("phase1","phase2","phase3","phase4"):
     sys.path.insert(0,str(root/folder))
 import demand
 import dispatch
@@ -37,9 +37,8 @@ def process(p):
             options.remove(best)
         return result
     if op=="pool":
-        if any(travel.node(tuple(r[k])) is None for r in p["requests"] for k in ("pickup","dropoff")):
-            return {"feasible":False,"reason":"Outside graph coverage"}
-        return dispatch.pool(travel.graph,p["requests"],p["capacity"],p["detour"])
+        from shared_route import plan
+        return plan(p)
     a,b=tuple(p["origin"]),tuple(p["destination"])
     vehicle=p["vehicle"]
     if vehicle not in roads.FUEL:

@@ -81,3 +81,30 @@ pooled estimates and both surge-adjusted fares. Both passengers share the
 lifecycle; cancellation by either cancels the whole booking. POST /api/pools/find
 with rideId returns an existing booked pool. Join the authenticated ride room
 for status events. The ride history contains the total and poolPlan.fares.
+
+### Individual and Pooling booking options
+
+Send bookingMode INDIVIDUAL (default) or POOLING to POST /api/rides. Individual
+requests bypass pool discovery and cannot accept another member. Boolean
+poolingOptIn is accepted for older clients; conflicting choices return 400.
+POST /api/pools/quote with pickup, dropoff, vehicleType and passengerCount
+previews an eligible offered ride. Send its rideId as poolRideId when booking
+to join that specific pool; a stale quote returns 409. Without a target, a
+pooling request may open a new opt-in ride.
+
+Shared quotes use the expanded Belagavi graph, two same-origin hypothetical
+vehicles for the separate comparison, and fastest directed road legs. The
+original pickup stays first. Choose the lowest-fuel feasible drop order;
+maximum pickup separation 2.5 km, direction difference 60 degrees, wait
+10 minutes, in-vehicle detour 25%, additional duration 10 minutes. Only
+onboard kilometres/minutes incur fare. One base fare and original surge
+apply; split proportional to direct fares, round the first share to paise and
+assign the remainder to the second. Joining can reduce the original quote.
+No shared booking is offered on estimated-only routes.
+
+GET /api/rides/:rideId and POST /api/pools/find return the persisted plan;
+fareEstimate on the ride is the caller's payable amount. The assigned driver
+sets ARRIVING then POSTs /api/rides/:rideId/stops/0 through /stops/3 in order.
+The fourth stop completes the ride. Before boarding, cancellation of a member
+retains the other passenger's agreed fare, ride ID and driver. After boarding
+starts, self-service withdrawal is rejected.

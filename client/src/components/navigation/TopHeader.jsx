@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, ShieldCheck, Sparkles } from 'lucide-react';
+import { MapPin, Sparkles, Box } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
  * TopHeader: Floating Liquid Glass app header displaying city context (Belagavi),
- * live telemetry status, and role quick-indicators.
+ * live telemetry status, and quick-access 3D Vehicle & Design System triggers.
  */
 export const TopHeader = ({ className = '' }) => {
   const navigate = useNavigate();
@@ -45,23 +45,30 @@ export const TopHeader = ({ className = '' }) => {
           </div>
         </div>
 
-        {/* Live Status Badge & Quick Role Pill */}
+        {/* Live Status Badge & Quick Role/Pill Buttons */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Belagavi Live Network Indicator */}
-          <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium backdrop-blur-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>OSM Active</span>
-          </div>
+          {/* 3D Taxi Direct Switch */}
+          <button
+            type="button"
+            onClick={() => navigate('/3d')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all select-none',
+              location.pathname === '/3d'
+                ? 'bg-accent/20 border border-accent/40 text-accent shadow-accent-pill'
+                : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-text-secondary hover:text-text-primary'
+            )}
+          >
+            <Box className="w-3.5 h-3.5 text-accent" />
+            <span className="hidden xs:inline">3D Honda Taxi</span>
+            <span className="xs:hidden">3D</span>
+          </button>
 
-          {/* Quick Nav to Preview */}
+          {/* Design System Preview */}
           <button
             type="button"
             onClick={() => navigate('/design-preview')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all select-none',
               location.pathname === '/design-preview'
                 ? 'bg-accent/20 border border-accent/40 text-accent shadow-accent-pill'
                 : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.12] text-text-secondary hover:text-text-primary'
@@ -78,4 +85,3 @@ export const TopHeader = ({ className = '' }) => {
 };
 
 export default TopHeader;
-

@@ -65,11 +65,11 @@ export const Home = () => {
           <GlassButton
             variant="glass"
             size="lg"
-            icon={Sparkles}
-            onClick={() => navigate('/design-preview')}
+            icon={Navigation2}
+            onClick={() => navigate('/3d')}
             className="w-full sm:w-auto"
           >
-            Explore Design Tokens
+            Launch 3D Taxi
           </GlassButton>
         </motion.div>
       </section>
@@ -90,13 +90,13 @@ export const Home = () => {
 
         <GlassCard
           icon={Navigation2}
-          title="3D Telemetry"
-          subtitle="Honda Taxi R3F Rig"
+          title="3D Honda Taxi"
+          subtitle="Real GLB Three.js Rig"
           interactive
-          onClick={() => navigate('/track')}
+          onClick={() => navigate('/3d')}
         >
           <p className="text-xs text-text-secondary leading-relaxed">
-            Real Honda Taxi 3D model synchronized with OpenStreetMap road geometry and live GPS coordinates.
+            Real Honda Taxi 3D model with automotive shaders, turntable rotation, wheel spin, and camera presets.
           </p>
         </GlassCard>
 

@@ -51,9 +51,9 @@ offer.index({ rideId: 1, attempt: 1 }, { unique: true });
 offer.index({ rideId: 1 }, { unique: true, partialFilterExpression: { status: 'pending' } });
 offer.index({ driverId: 1 }, { unique: true, partialFilterExpression: { status: 'pending' } });
 offer.index({ status: 1, expiresAt: 1 });
-export const Driver = mongoose.model('BookingDriver', driver, 'drivers');
-export const Ride = mongoose.model('BookingRide', ride, 'rides');
-export const Offer = mongoose.model('BookingOffer', offer, 'offers');
+export const Driver = mongoose.model('BookingDriver', driver, 'demo_drivers');
+export const Ride = mongoose.model('BookingRide', ride, 'demo_rides');
+export const Offer = mongoose.model('BookingOffer', offer, 'demo_offers');
 export async function initializeBookingModels() {
   // Never syncIndexes(): it can drop teammates' indexes.
   for (const model of [Driver, Ride, Offer]) await model.createIndexes();

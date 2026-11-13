@@ -3,7 +3,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import healthRouter from './routes/health.routes.js';
-import { bookingRouter } from './routes/booking.routes.js';
+import { bookingRouter } from './routes/demo.routes.js';
+import authenticatedRouter from './routes/booking.routes.js';
 import { BookingService } from './services/booking.js';
 
 export function createApp(service = new BookingService()) {
@@ -30,7 +31,8 @@ export function createApp(service = new BookingService()) {
 
   // ── Routes ───────────────────────────────────────────────────────────────────
   app.use('/api/health', healthRouter);
-  app.use('/api', bookingRouter(service));
+  if (process.env.ENABLE_BOOKING_DEMO === 'true') app.use('/api/demo', bookingRouter(service));
+  app.use('/api', authenticatedRouter);
 
   // ── 404 handler ──────────────────────────────────────────────────────────────
   app.use((_req, res) => {
@@ -41,7 +43,7 @@ export function createApp(service = new BookingService()) {
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
     const status = err.code === 11000 ? 409 : ['ValidationError','CastError'].includes(err.name) ? 400 : (err.status || err.statusCode || 500);
-    const code = err.code === 11000 ? 'CONFLICT' : status >= 500 ? 'INTERNAL_ERROR' : typeof err.code === 'string' ? err.code : 'INVALID_REQUEST';
+    const code = err.code === 11000 ? 'CONFLICT' : status >= 500 ? 'INTERNAL_ERROR' : typeof err.code === 'string' ? err.code : err.error || 'INVALID_REQUEST';
     const message = status >= 500 ? 'Internal server error' : err.code === 11000 ? 'Conflicting assignment' : status === 400 ? 'Invalid request data' : err.message;
     res.status(status).json({ error: code, message });
   });

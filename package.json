@@ -1,0 +1,23 @@
+{
+  "name": "ridesync-ai-root",
+  "version": "1.0.0",
+  "description": "RideSyncAI: Intelligent Ride Matching and Dynamic Fleet Optimization System (Belagavi, Karnataka)",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "preview": "npm --prefix client run preview",
+    "server": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run dev",
+    "seed:demo": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run seed:demo"
+  },
+  "keywords": [
+    "ridesync",
+    "belagavi",
+    "liquid-glass",
+    "threejs",
+    "fleet-optimization"
+  ],
+  "author": "Abhinandhan Lohar",
+  "license": "MIT"
+}
+

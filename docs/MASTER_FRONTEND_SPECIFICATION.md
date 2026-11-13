@@ -126,3 +126,4 @@ Reusable components and styling tokens:
 6. **Phase 6:** Admin dashboard.
 7. **Phase 7:** Backend integration, authentication, and real-time Socket.IO.
 8. **Phase 8:** Performance optimization, end-to-end testing, and final polish.
+

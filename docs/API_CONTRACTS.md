@@ -581,3 +581,6 @@ Find or create a ride pool matching the given ride parameters.
 | `surge_updated` | Server → Passenger | Zone surge multiplier changed |
 
 See `ARCHITECTURE.md §5` for full payload definitions.
+
+### Session and Sarathi activity
+Authenticated GET /api/auth/me returns the persisted user identity and role. GET /api/driver/history returns up to 50 rides assigned to the authenticated driver, newest first.

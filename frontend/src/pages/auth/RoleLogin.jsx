@@ -20,18 +20,17 @@ export default function RoleLogin({role}) {
     }catch(e){setError(e.message);}finally{setBusy(false);}
   }
   return <div className="cinematic login-page"><PublicNav/><main className="login-layout">
-    <div className="login-intro"><p className="cinema-eyebrow">{captain?'CAPTAIN':'PASSENGER'} / RIDESYNC AI</p><h1>{captain?'Your city.':'Your next ride.'}<br/><em>{captain?'Your next chapter.':'A better beginning.'}</em></h1><TaxiIllustration/></div>
-    <section className="login-panel" aria-labelledby="login-title"><p className="cinema-eyebrow">WELCOME TO RIDESYNC</p><h2 id="login-title">{captain?'Captain login':register?'Create an account':'Passenger login'}</h2>
-      <p className="login-pending">{captain?'Use your administrator-provisioned driver account.':'Sign in to request and track rides through the backend.'}</p>
+    <div className="login-intro"><p className="cinema-eyebrow">{captain?'SARATHI':'YATRI'} / INTELLIMARG AI</p><h1>{captain?'Your city.':'Your next ride.'}<br/><em>{captain?'Your next ride.':'A better beginning.'}</em></h1><TaxiIllustration/></div>
+    <section className="login-panel" aria-labelledby="login-title"><p className="cinema-eyebrow">WELCOME TO INTELLIMARG</p><h2 id="login-title">{captain?'Sarathi login':register?'Create an account':'Yatri login'}</h2>
+      <p className="login-pending">{captain?'Use your administrator-provisioned Sarathi account.':'Sign in to request and track rides through the backend.'}</p>
       <form onSubmit={submit}>{register&&!captain&&<><label htmlFor="name">Full name</label><input id="name" name="name" required minLength={2} maxLength={100} autoComplete="name" disabled={busy}/></>}
         <label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="username" placeholder="you@example.com" disabled={busy}/>
         <label htmlFor="password">Password</label><input id="password" name="password" type="password" required minLength={register?8:1} autoComplete={register?'new-password':'current-password'} disabled={busy}/>
         {error&&<p role="alert" className="ride-error">{error}</p>}
         <button type="submit" disabled={busy}>{busy?'Connecting…':register&&!captain?'Create account':'Sign in'} <span><Arrow/></span></button>
       </form>
-      {!captain&&<button className="auth-switch" onClick={()=>{setRegister(!register);setError('');}} disabled={busy}>{register?'Already registered? Sign in':'New passenger? Create an account'}</button>}
-      {!captain&&<Link className="cinema-text-link" to="/book" onClick={()=>{if(!state.ride)state.setMode('simulation');}}>Explore the simulation <Arrow/></Link>}
-      <Link className="login-switch" to={captain?'/login/passenger':'/login/captain'} onClick={()=>{setRegister(false);setError('');}}>{captain?'Passenger login':'Captain login'} <Arrow/></Link>
+      {!captain&&<button className="auth-switch" onClick={()=>{setRegister(!register);setError('');}} disabled={busy}>{register?'Already registered? Sign in':'New Yatri? Create an account'}</button>}
+      <Link className="login-switch" to={captain?'/login/passenger':'/login/captain'} onClick={()=>{setRegister(false);setError('');}}>{captain?'Yatri login':'Sarathi login'} <Arrow/></Link>
       <Link className="login-switch" to="/">Back to the journey</Link>
     </section></main></div>;
 }

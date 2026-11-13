@@ -44,6 +44,11 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   const a=(await request('/api/auth/login','POST',{email:users[0].email,password})).data.accessToken;
   const b=(await request('/api/auth/login','POST',{email:users[1].email,password})).data.accessToken;
   assert.ok(passenger&&a&&b);
+  assert.equal((await request('/api/auth/me','GET',undefined,a)).data.user.role,'driver');
+  assert.equal((await request('/api/auth/me')).status,401);
+  assert.equal((await request('/api/driver/history','GET',undefined,passenger)).status,403);
+  assert.equal((await request('/api/rides/history','GET',undefined,a)).status,403);
+  assert.deepEqual((await request('/api/driver/history','GET',undefined,a)).data.rides,[]);
   const passengerSocket=await connectSocket(passenger);
   const driverSocket=await connectSocket(a);
   const deniedSocket=await connectSocket('invalid-token');

@@ -24,7 +24,7 @@ export default function CinematicLanding(){
     <div className="cinema-stage" aria-hidden="true">
       <span className="stage-orbit"/>
       <SceneBoundary>{webgl&&!reduced&&!failed&&visible ? <Suspense fallback={<TaxiIllustration/>}><Scene director={director} onFailure={()=>setFailed(true)}/></Suspense> : <TaxiIllustration/>}</SceneBoundary>
-      <span className="stage-caption">RIDESYNC / CITY EDITION <i>01</i></span>
+      <span className="stage-caption">INTELLIMARG / CITY EDITION <i>01</i></span>
     </div>
     <main>
       <section className="cinema-chapter cinema-hero" id="explore" aria-labelledby="hero-title">
@@ -53,18 +53,18 @@ export default function CinematicLanding(){
       </div></section>
       <section className="cinema-chapter" id="city" aria-labelledby="city-title"><div className="chapter-copy">
         <p className="cinema-eyebrow">03 / Connected Belagavi</p><h2 id="city-title">A city that moves<br/><em>intelligently.</em></h2>
-        <p className="cinema-description">From the first morning pickup to the last ride home. A more considered connection between people, captains and places.</p>
+        <p className="cinema-description">From the first morning pickup to the last ride home. A more considered connection between people, Sarathis and places.</p>
         <div className="city-zones"><span><i/>Nehru Nagar</span><span><i/>Central Bus Terminus</span><span><i/>Tilakwadi</span></div>
         <ul className="city-principles"><li>Anticipate demand <span>01</span></li><li>Reposition with purpose <span>02</span></li><li>Match more fairly <span>03</span></li></ul>
-        <p className="cinema-note">Concept demonstration using synthetic scenarios. Live demand intelligence is not connected.</p>
+        <p className="cinema-note">Demand forecasts use simulated Belagavi data.</p>
       </div></section>
       <section className="cinema-chapter cinema-arrival" id="arrival" aria-labelledby="arrival-title"><div className="chapter-copy">
         <p className="cinema-eyebrow">04 / Your journey starts here</p><h2 id="arrival-title">Where are we<br/><em>taking you?</em></h2><p className="cinema-description">One city. Two ways to move.</p>
         <div className="role-options">
-          <Link to="/login/passenger" className="role-option"><span className="role-label">PASSENGER / 01</span><h3>Ride with RideSync</h3><p>Book smarter journeys with transparent routes, intelligent matching and estimated fuel-aware choices.</p><span className="role-cta">Continue as Passenger <span aria-hidden="true"><Arrow/></span></span></Link>
-          <Link to="/login/captain" className="role-option"><span className="role-label">CAPTAIN / 02</span><h3>Drive with RideSync</h3><p>Find suitable rides, spend less time idle and make better decisions with demand intelligence.</p><span className="role-cta">Continue as Captain <span aria-hidden="true"><Arrow/></span></span></Link>
+          <Link to="/login/passenger" className="role-option"><span className="role-label">YATRI / 01</span><h3>Ride with IntelliMarg</h3><p>Book smarter journeys with transparent routes, intelligent matching and estimated fuel-aware choices.</p><span className="role-cta">Continue as Yatri <span aria-hidden="true"><Arrow/></span></span></Link>
+          <Link to="/login/captain" className="role-option"><span className="role-label">SARATHI / 02</span><h3>Drive with IntelliMarg</h3><p>Find suitable rides, spend less time idle and make better decisions with demand intelligence.</p><span className="role-cta">Continue as Sarathi <span aria-hidden="true"><Arrow/></span></span></Link>
         </div>
-      </div><footer className="cinema-footer"><span>RideSync AI — Belagavi</span><Link to="/book">Explore the booking demo <Arrow/></Link><span>MOVE WITH PURPOSE.</span></footer></section>
+      </div><footer className="cinema-footer"><span>IntelliMarg — Belagavi</span><Link to="/book">Book Your Ride <Arrow/></Link><span>Smarter Routes. Better Rides.</span></footer></section>
     </main>
     <aside className="chapter-indicator" aria-label="Story chapters"><span>0{chapter+1}</span><div>{chapters.map((name,i)=><a href={`#${['explore','dispatch','routes','city','arrival'][i]}`} key={name} className={i===chapter?'active':''} aria-label={name} aria-current={i===chapter?'step':undefined}/>)}</div><span>05</span></aside>
   </div>;

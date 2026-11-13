@@ -13,7 +13,7 @@ const router=Router();const adminRouter=Router();const webhookRouter=Router();
 const fail=(status,code,message)=>Object.assign(new Error(message),{status,code});
 const run=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 const uploadDirectory=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../uploads');
-const phoneValue=value=>String(value||'').replace(/[\s()-]/g,'');
+const phoneValue=value=>String(value||'').replace(/[\s()-]/g,'').replace(/^0(?=[1-9])/,'+91');
 const validPhone=value=>/^\+?[1-9]\d{9,14}$/.test(value);
 const safeUser=user=>({_id:String(user._id),name:user.displayName,email:user.email||'',phone:user.phone,role:user.role.toLowerCase()});
 const tokenFor=user=>jwt.sign({sub:String(user._id),role:user.role},secret(),{expiresIn:'8h'});
@@ -29,7 +29,8 @@ router.post('/register',run(async(req,res)=>{
   const phone=phoneValue(req.body.phone);
   if(typeof fullName!=='string'||fullName.trim().length<2||fullName.trim().length>100||!validPhone(phone)||typeof email!=='string'||!/^\S+@\S+\.\S+$/.test(email)||typeof password!=='string'||password.length<8||typeof address!=='string'||address.trim().length<5||typeof city!=='string'||city.trim().length<2)throw fail(400,'VALIDATION_ERROR','Enter a valid name, phone, email, password, address and city.');
   if(!['BIKE','AUTO','CAR'].includes(vehicleCategory)||typeof manufacturer!=='string'||manufacturer.trim().length<1||typeof model!=='string'||model.trim().length<1||typeof registrationNumber!=='string'||registrationNumber.trim().length<4)throw fail(400,'VALIDATION_ERROR','Complete the vehicle category, manufacturer, model and registration number.');
-  if(upiId&&!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9.-]{1,63}$/.test(upiId))throw fail(400,'INVALID_UPI','Enter a valid UPI ID. Never enter a PIN or OTP.');
+  const cleanUpi=typeof upiId==='string'?upiId.trim():'';
+  if(cleanUpi&&!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9.-]{1,63}$/.test(cleanUpi))throw fail(400,'INVALID_UPI','Enter a valid UPI ID (e.g. name@bank or 9876543210@upi). Never enter a PIN or bank name alone.');
   const user=new User({displayName:fullName.trim(),email:email.trim().toLowerCase(),phone,passwordHash:await bcrypt.hash(password,12),role:'DRIVER',isSynthetic:false});
   try{await user.save();}catch(error){if(error.code===11000){const key=Object.keys(error.keyPattern||{})[0];throw fail(409,key==='phone'?'PHONE_EXISTS':'ACCOUNT_EXISTS',key==='phone'?'This phone number is already registered.':'An account already uses this email address.');}throw error;}
   try{

@@ -50,7 +50,7 @@ export function createApp(service = new BookingService()) {
   app.use((err, _req, res, _next) => {
     const status = err.code === 11000 ? 409 : ['ValidationError','CastError'].includes(err.name) ? 400 : (err.status || err.statusCode || 500);
     const code = err.code === 11000 ? 'CONFLICT' : status >= 500 ? 'INTERNAL_ERROR' : typeof err.code === 'string' ? err.code : err.error || 'INVALID_REQUEST';
-    const message = status >= 500 ? 'Internal server error' : err.code === 11000 ? 'Conflicting assignment' : status === 400 ? 'Invalid request data' : err.message;
+    const message = status >= 500 ? 'Internal server error' : err.code === 11000 ? 'Conflicting assignment' : (err.message || 'Invalid request data');
     res.status(status).json({ error: code, message });
   });
 

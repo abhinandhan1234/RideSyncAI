@@ -13,9 +13,9 @@ export function attachSockets(server,app){
   socket.join(`user:${socket.data.user.sub}`);
   socket.on('ride:join',async rideId=>{
    if(typeof rideId!=='string'||!/^[0-9a-f]{24}$/i.test(rideId))return;
-   const ride=await Ride.findById(rideId).select('passengerId driverId');
+   const ride=await Ride.findById(rideId).select('passengerId driverId poolMember');
    const driver=socket.data.user.role==='DRIVER'&&await Driver.findOne({userId:socket.data.user.sub}).select('_id');
-   if(ride&&(String(ride.passengerId)===socket.data.user.sub||String(ride.driverId)===String(driver?._id)))socket.join(`ride:${rideId}`);
+   if(ride&&(String(ride.passengerId)===socket.data.user.sub||String(ride.poolMember)===socket.data.user.sub||(driver&&String(ride.driverId)===String(driver._id))))socket.join(`ride:${rideId}`);
   });
  });
  return io;

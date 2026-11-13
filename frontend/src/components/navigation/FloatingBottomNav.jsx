@@ -1,3 +1,4 @@
+import {useRide} from '../../context/RideContext';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -20,6 +21,7 @@ import { cn } from '../../utils/cn';
  * 5. Profile
  */
 export const FloatingBottomNav = ({ className = '' }) => {
+  const {auth}=useRide();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -78,7 +80,7 @@ export const FloatingBottomNav = ({ className = '' }) => {
         {/* Top Rim Glare Reflection */}
         <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
-        {navItems.map((item) => {
+        {(auth?.user.role==='driver'?[{id:'sarathi',label:'Dashboard',path:'/captain',icon:Compass},...navItems.filter(n=>['activity','profile'].includes(n.id))]:navItems).map((item) => {
           const isActive = currentPath === item.path ||
             (item.path !== '/' && currentPath.startsWith(item.path));
           const Icon = item.icon;

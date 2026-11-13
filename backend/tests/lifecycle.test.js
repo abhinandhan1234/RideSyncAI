@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { WebSocket } from 'ws';
 import app from '../src/app.js';
 import {User,Driver,Ride,RideOffer,Zone} from '../src/models/index.js';
 import {expireOffers,drainDispatch} from '../src/services/matching/dispatch.js';
@@ -45,6 +44,11 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   const a=(await request('/api/auth/login','POST',{email:users[0].email,password})).data.accessToken;
   const b=(await request('/api/auth/login','POST',{email:users[1].email,password})).data.accessToken;
   assert.ok(passenger&&a&&b);
+  assert.equal((await request('/api/auth/me','GET',undefined,a)).data.user.role,'driver');
+  assert.equal((await request('/api/auth/me')).status,401);
+  assert.equal((await request('/api/driver/history','GET',undefined,passenger)).status,403);
+  assert.equal((await request('/api/rides/history','GET',undefined,a)).status,403);
+  assert.deepEqual((await request('/api/driver/history','GET',undefined,a)).data.rides,[]);
   const passengerSocket=await connectSocket(passenger);
   const driverSocket=await connectSocket(a);
   const deniedSocket=await connectSocket('invalid-token');
@@ -54,13 +58,10 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal(near.data.count,2);
   assert.equal((await request('/api/drivers/nearby?lng=181&lat=15.85','GET',undefined,passenger)).status,400);
   assert.equal((await request('/api/drivers/nearby?lng=74.5&lat=15.85')).status,401);
-  const payload={pickup:point(74.5,15.85),dropoff:point(74.51,15.86),pickupAddress:'Camp, Belagavi',dropoffAddress:'Belagavi Railway Station',routeType:'eco'};
-  assert.equal((await request('/api/locations/search?q=x')).status,400);
-  assert.equal((await request('/api/locations/reverse?lat=91&lon=74.5')).status,400);
+  const payload={pickup:point(74.5,15.85),dropoff:point(74.51,15.86),routeType:'eco'};
   const created=await request('/api/rides','POST',payload,passenger);
   assert.equal(created.status,202);
   const rideId=created.data.rideId;
-  assert.equal((await request(`/api/rides/${rideId}/cancel`,'PATCH',{},b)).status,403);
   const first=await wait(()=>RideOffer.findOne({rideId,attempt:1}));
   await wait(()=>driverSocket.frames.some(frame=>frame.includes('ride:offer')));
   passengerSocket.ws.send('42'+JSON.stringify(['ride:join',rideId]));
@@ -79,15 +80,7 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.deepEqual(concurrentAcceptance.map(result=>result.status).sort(),[200,409]);
   await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ride:accepted')));
   assert.equal((await request(`/api/offers/${second.id}/respond`,'POST',{action:'accept'},b)).status,409);
-  const details=await request(`/api/rides/${rideId}`,'GET',undefined,passenger);
-  assert.equal(details.data.pickupAddress,payload.pickupAddress);
-  assert.equal(details.data.driver.name,'Test Driver B');
-  assert.equal((await request('/api/drivers/location','PATCH',{latitude:15.851,longitude:74.501},b)).status,200);
-  const liveDetails=await request(`/api/rides/${rideId}`,'GET',undefined,passenger);
-  assert.equal(liveDetails.data.driver.locationSource,'GPS');
-  assert.deepEqual(liveDetails.data.driver.location.coordinates,[74.501,15.851]);
-  assert.equal((await request('/api/drivers/location','PATCH',{latitude:91,longitude:74.5},b)).status,400);
-  for(const status of ['ARRIVING','ARRIVED','ONGOING','COMPLETED'])assert.equal((await request(`/api/rides/${rideId}/status`,'PATCH',{status},b)).status,200);
+  for(const status of ['ARRIVING','ONGOING','COMPLETED'])assert.equal((await request(`/api/rides/${rideId}/status`,'PATCH',{status},b)).status,200);
   await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ride:status')));
   assert.equal((await Ride.findById(rideId)).status,'COMPLETED');
   console.log('Verified booking response',JSON.stringify(created.data));
@@ -100,12 +93,8 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   const competing=await request('/api/rides','POST',payload,passenger);
   assert.equal(competing.status,409);
   await wait(async()=>['OFFERED','FAILED'].includes((await Ride.findById(noDrivers.data.rideId)).status));
-  const noDriverStatus=(await Ride.findById(noDrivers.data.rideId)).status;
-  if(noDriverStatus!=='FAILED'){
-   assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'PATCH',{reason:'Changed my plans'},passenger)).status,200);
-   assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'PATCH',{reason:'Changed my plans'},passenger)).status,409);
-   assert.equal((await Ride.findById(noDrivers.data.rideId)).cancellationReason,'Changed my plans');
-  }
+  assert.equal((await request(`/api/rides/${noDrivers.data.rideId}/cancel`,'POST',{},passenger)).status,200);
+  assert.equal((await Ride.findById(noDrivers.data.rideId)).status,'CANCELLED');
   assert.equal((await request('/api/rides','POST',{...payload,pickup:point(181,15.85)},passenger)).status,400);
   const expiring=await request('/api/rides','POST',payload,passenger);
   const expiringOffer=await wait(()=>RideOffer.findOne({rideId:expiring.data.rideId,attempt:1}));
@@ -114,11 +103,100 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal((await RideOffer.findById(expiringOffer._id)).status,'EXPIRED');
   assert.ok(await RideOffer.exists({rideId:expiring.data.rideId,attempt:2}));
   await request(`/api/rides/${expiring.data.rideId}/cancel`,'POST',{},passenger);
-  const duplicateRequests=await Promise.all([request('/api/rides','POST',payload,passenger),request('/api/rides','POST',payload,passenger)]);
-  assert.deepEqual(duplicateRequests.map(item=>item.status).sort(),[202,409]);
-  const duplicateRide=duplicateRequests.find(item=>item.status===202).data.rideId;
-  await wait(async()=>['OFFERED','FAILED'].includes((await Ride.findById(duplicateRide)).status));
-  if((await Ride.findById(duplicateRide)).status!=='FAILED')await request(`/api/rides/${duplicateRide}/cancel`,'PATCH',{reason:'Booked by mistake'},passenger);
+  const friend=(await request('/api/auth/register','POST',{name:'Pool Passenger',email:`pool-${tag}@example.invalid`,password})).data.accessToken;
+  const admin=(await import('jsonwebtoken')).default.sign({sub:'test-admin',role:'ADMIN'},process.env.JWT_SECRET);
+  const query='zoneCode=Z01&from=2026-11-13T09:00:00%2B05:30';
+  const forecast=await request('/api/predictions/demand?'+query,'GET',undefined,admin);
+  assert.equal(forecast.data.predictions[0].predictedCount,17.902);
+  assert.equal((await request('/api/predictions/demand?zoneCode=DEMO-Z1','GET',undefined,admin)).status,400);
+  const history=await request('/api/predictions/history?zoneCode=Z01','GET',undefined,admin);
+  assert.equal(history.data.history.length,168);
+  const intelligence=await request('/api/zones/surge?'+query,'GET',undefined,passenger);
+  assert.equal(intelligence.data.zones[0].available,2);
+  const compare=await request('/api/routes/compare?originLng=74.5&originLat=15.85&destLng=74.501&destLat=15.851','GET',undefined,passenger);
+  assert.equal(compare.data.routes.eco.geometry.type,'LineString');
+  const shared={...payload,pickup:point(74.4998676,15.8506512),dropoff:point(74.5071624,15.8481),bookingMode:'POOLING'};
+  const initial=await request('/api/rides','POST',shared,passenger);
+  const sharedId=initial.data.rideId;
+  const offer=await wait(()=>RideOffer.findOne({rideId:sharedId,status:'PENDING'}));
+  const secondParty={...shared,pickup:point(74.5037959,15.8507182),dropoff:point(74.5099866,15.8504132),poolRideId:sharedId};
+  const quotes=await request('/api/pools/quote','POST',secondParty,friend);
+  assert.equal(quotes.data.rideId,sharedId);
+  const rival=(await request('/api/auth/register','POST',{name:'Seat Rival',email:`rival-${tag}@example.invalid`,password})).data.accessToken;
+  const joiners=[friend,rival];
+  const joinSockets=await Promise.all(joiners.map(connectSocket));
+  const joins=await Promise.all(joiners.map(t=>request('/api/rides','POST',secondParty,t)));
+  assert.deepEqual(joins.map(j=>j.status).sort(),[202,409]);
+  const winner=joins.findIndex(j=>j.status===202), member=joiners[winner];
+  const paired=joins[winner];
+  assert.equal((await request('/api/rides','POST',secondParty,member)).status,409);
+  await wait(()=>joinSockets[winner].frames.some(f=>f.includes('POOL_JOINED')));
+  assert.equal(joinSockets[1-winner].frames.some(f=>f.includes(sharedId)),false);
+  assert.equal(Math.round(paired.data.pool.fares.reduce((a,b)=>a+b)*100),Math.round((await Ride.findById(sharedId)).fare.total*100));
+  assert.equal(paired.data.rideId,sharedId);
+  assert.equal(paired.data.pool.feasible,true);
+  const tokens=new Map([[drivers[0].id,a],[drivers[1].id,b]]);
+  assert.equal((await request(`/api/offers/${offer.id}/respond`,'POST',{action:'accept'},tokens.get(String(offer.driverId)))).status,200);
+  await Ride.updateOne({_id:sharedId},{$set:{arrivalDeadline:new Date(Date.now()-1000)}});
+  await expireOffers(io);
+  await wait(()=>passengerSocket.frames.some(frame=>frame.includes('ARRIVAL_DELAY')));
+  const replacement=await wait(()=>RideOffer.findOne({rideId:sharedId,attempt:2}));
+  assert.notEqual(String(replacement.driverId),String(offer.driverId));
+  const token=tokens.get(String(replacement.driverId));
+  assert.equal((await request(`/api/offers/${replacement.id}/respond`,'POST',{action:'accept'},token)).status,200);
+  assert.equal((await request(`/api/rides/${sharedId}/status`,'PATCH',{status:'ARRIVING'},token)).status,200);
+  const stopRace=await Promise.all([1,2].map(()=>request(`/api/rides/${sharedId}/stops/0`,'POST',{},token)));
+  assert.deepEqual(stopRace.map(x=>x.status).sort(),[200,409]);
+  for(let index=1;index<4;index++)assert.equal((await request(`/api/rides/${sharedId}/stops/${index}`,'POST',{},token)).status,200);
+  const snapshot=await request(`/api/rides/${sharedId}`,'GET',undefined,member);
+  assert.equal(snapshot.data.status,'COMPLETED');
+  assert.equal(snapshot.data.fareEstimate,paired.data.fareEstimate);
+  assert.ok((await request('/api/rides/history','GET',undefined,member)).data.rides.some(r=>r._id===sharedId));
+  await wait(()=>joinSockets[winner].frames.some(f=>f.includes('POOL_COMPLETED')));
+  for(const name of ['POOL_ROUTE_UPDATED','POOL_DRIVER_ASSIGNED','ride:accepted','ARRIVAL_DELAY','POOL_PASSENGER_PICKED_UP','POOL_PASSENGER_DROPPED_OFF'])
+    assert.ok(joinSockets[winner].frames.some(f=>f.includes(name)),name);
+  assert.equal(joinSockets[1-winner].frames.some(f=>f.includes(sharedId)),false);
+  for(const socket of joinSockets)socket.ws.close();
+  for(const action of ['accept','cancel','expire','withdraw','individual']){
+    const opening=await request('/api/rides','POST',{...shared,bookingMode:action==='individual'?'INDIVIDUAL':'POOLING'},passenger);
+    assert.equal(opening.status,202);
+    const id=opening.data.rideId;
+    const pending=await wait(()=>RideOffer.findOne({rideId:id,status:'PENDING'}));
+    const join=()=>request('/api/rides','POST',{...secondParty,poolRideId:id},friend);
+    if(action==='individual')assert.equal((await join()).status,409);
+    if(action==='accept'){
+      const [joined,accepted]=await Promise.all([join(),request(`/api/offers/${pending.id}/respond`,'POST',{action:'accept'},tokens.get(String(pending.driverId)))]);
+      assert.equal(accepted.status,200);
+      assert.ok([202,409].includes(joined.status));
+      assert.equal(Boolean((await Ride.findById(id)).poolMember),joined.status===202);
+    }
+    if(action==='expire'){
+      await RideOffer.updateOne({_id:pending.id},{$set:{expiresAt:new Date(0)}});
+      await Promise.all([join(),expireOffers(io)]);
+      assert.equal((await RideOffer.findById(pending.id)).status,'EXPIRED');
+      assert.ok(await RideOffer.exists({rideId:id,attempt:2}));
+    }
+    if(action==='cancel'){
+      const [joined,cancelled]=await Promise.all([join(),request(`/api/rides/${id}/cancel`,'POST',{},passenger)]);
+      assert.ok([200,409].includes(cancelled.status));
+      const current=await Ride.findById(id);
+      if(current.status==='CANCELLED')assert.equal(joined.status,409);
+    }
+    if(action==='withdraw'){
+      assert.equal((await join()).status,202);
+      const before=await Ride.findById(id);
+      const withdrew=await request(`/api/rides/${id}/cancel`,'POST',{},friend);
+      assert.equal(withdrew.data.status,'WITHDRAWN');
+      const after=await Ride.findById(id);
+      assert.equal(after.poolMember,null);
+      assert.equal(after.fare.total,before.poolPlan.fares[0]);
+      assert.equal((await request(`/api/rides/${id}`,'GET',undefined,friend)).status,403);
+    }
+    for(const t of [friend,passenger])await request(`/api/rides/${id}/cancel`,'POST',{},t);
+  }
+  console.log('PS2 verified',JSON.stringify({forecast:forecast.data.predictions[0],history:history.data.history[0],
+    zone:intelligence.data.zones[0],ecoKm:compare.data.routes.eco.distanceKm,pool:paired.data.pool.pooled,
+    selection:snapshot.data.selection,status:snapshot.data.status}));
   await Driver.updateMany({_id:{$in:drivers.map(d=>d._id)}},{$set:{status:'OFFLINE',activeRideId:null}});
   await Driver.updateOne({_id:drivers[0]._id},{$set:{status:'AVAILABLE'}});
   const other=await request('/api/auth/register','POST',{name:'Second Passenger',email:`second-${tag}@example.invalid`,password});

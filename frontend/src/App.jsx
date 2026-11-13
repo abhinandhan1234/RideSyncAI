@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import AppShell from './components/layout/AppShell';
 import CinematicLanding from './pages/CinematicLanding';
 import RoleLogin from './pages/auth/RoleLogin';
-import { RideProvider } from './context/RideContext';
-import CaptainDashboard from './pages/CaptainDashboard';
-import Booking from './pages/Booking';
-import Tracking from './pages/Tracking';
+import { RideProvider,useRide } from './context/RideContext';
+const CaptainDashboard=lazy(()=>import('./pages/CaptainDashboard'));
+const Booking=lazy(()=>import('./pages/Booking'));
+const Tracking=lazy(()=>import('./pages/Tracking'));
 import Activity from './pages/Activity';
 import Profile from './pages/Profile';
-import DesignSystemPreview from './pages/DesignSystemPreview';
+const DesignSystemPreview=lazy(()=>import('./pages/DesignSystemPreview'));
 const Taxi3DPreview = lazy(() => import('./pages/Taxi3DPreview'));
 function ScrollReset() {
   const { pathname, hash } = useLocation();
@@ -22,7 +22,13 @@ function ScrollReset() {
   }, [pathname, hash]);
   return null;
 }
-const ApplicationPage = ({children}) => <AppShell>{children}</AppShell>;
+function ApplicationPage({children,role}){
+ const {auth,restoring}=useRide();
+ if(restoring)return <p role="status">Restoring your session…</p>;
+ if(!auth)return <Navigate replace to={role==='driver'?'/login/captain':'/login/passenger'}/>;
+ if(role&&auth.user.role!==role)return <Navigate replace to={auth.user.role==='driver'?'/captain':'/book'}/>;
+ return <AppShell>{children}</AppShell>;
+}
 
 export function App() {
   return (
@@ -34,10 +40,10 @@ export function App() {
           <Route path="/" element={<CinematicLanding />} />
           <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
           <Route path="/login/captain" element={<RoleLogin role="captain" />} />
-          <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
-          <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
-          <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
-          <Route path="/ride/:rideId" element={<ApplicationPage><Tracking /></ApplicationPage>} />
+          <Route path="/captain" element={<ApplicationPage role="driver"><CaptainDashboard /></ApplicationPage>} />
+          <Route path="/book" element={<ApplicationPage role="passenger"><Booking /></ApplicationPage>} />
+          <Route path="/track" element={<ApplicationPage role="passenger"><Tracking /></ApplicationPage>} />
+          <Route path="/ride/:rideId" element={<ApplicationPage role="passenger"><Tracking /></ApplicationPage>} />
           <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
           <Route path="/profile" element={<ApplicationPage><Profile /></ApplicationPage>} />
           <Route path="/design-preview" element={<ApplicationPage><DesignSystemPreview /></ApplicationPage>} />

@@ -1,9 +1,10 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ContactShadows, Environment } from '@react-three/drei';
+import { ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import TaxiModel from './TaxiModel';
 import TaxiCamera from './TaxiCamera';
+import TaxiIllustration from '../components/cinematic/TaxiIllustration';
 
 /**
  * ThreeLoadingFallback: Minimal animated loader inside the canvas
@@ -63,9 +64,10 @@ export const TaxiScene = ({
   return (
     <div className={`relative w-full h-full select-none ${className}`}>
       <Canvas
+        fallback={<TaxiIllustration />}
         shadows
         dpr={[1, 2]} // Balanced crispness and smartphone GPU performance
-        camera={{ position: [3.3, 1.35, 3.7], fov: 40 }}
+        camera={{ position: [6.3, 3, 7.5], fov: 40 }}
         gl={{
           antialias: true,
           alpha: true,
@@ -102,7 +104,7 @@ export const TaxiScene = ({
 
         <Suspense fallback={<ThreeLoadingFallback />}>
           {/* Environment Studio Reflection Map */}
-          <Environment preset="city" />
+          <hemisphereLight args={['#F2F3EF', '#263B43', 1.2]} />
 
           {/* Showroom Platform */}
           <StudioPlatform />

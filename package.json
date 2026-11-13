@@ -10,7 +10,11 @@
     "dev:client": "npm --prefix client run dev",
     "server": "npm --prefix backend run dev",
     "server:starter": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run dev",
-    "seed:demo": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run seed:demo"
+    "seed:demo": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run seed:demo",
+    "install:local": "npm --prefix frontend ci && npm --prefix backend ci",
+    "local": "node scripts/run-local.mjs",
+    "local:persistent": "node scripts/run-local.mjs --persistent",
+    "check:vehicle": "node frontend/scripts/check-vehicle.mjs"
   },
   "keywords": [
     "ridesync",

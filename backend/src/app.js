@@ -3,37 +3,49 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import healthRouter from './routes/health.routes.js';
+import { bookingRouter } from './routes/booking.routes.js';
+import { BookingService } from './services/booking.js';
 
-const app = express();
+export function createApp(service = new BookingService()) {
+  const app = express();
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => console.info(`${req.method} ${req.route?.path || 'unmatched'} ${res.statusCode} ${Date.now()-start}ms`));
+    next();
+  });
 
-// Security headers
-app.use(helmet());
+  // Security headers
+  app.use(helmet());
 
-// CORS — allow the configured client origin
-app.use(
-  cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-    credentials: true,
-  })
-);
+  // CORS — allow the configured client origin
+  app.use(
+    cors({
+      origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+      credentials: true,
+    })
+  );
 
-// Body parsing
-app.use(express.json());
+  // Body parsing
+  app.use(express.json());
 
-// ── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/health', healthRouter);
+  // ── Routes ───────────────────────────────────────────────────────────────────
+  app.use('/api/health', healthRouter);
+  app.use('/api', bookingRouter(service));
 
-// ── 404 handler ──────────────────────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+  // ── 404 handler ──────────────────────────────────────────────────────────────
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' });
+  });
 
-// ── Global error handler ─────────────────────────────────────────────────────
-// eslint-disable-next-line no-unused-vars
-app.use((err, _req, res, _next) => {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  res.status(status).json({ error: message, status });
-});
+  // ── Global error handler ─────────────────────────────────────────────────────
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, _req, res, _next) => {
+    const status = err.code === 11000 ? 409 : ['ValidationError','CastError'].includes(err.name) ? 400 : (err.status || err.statusCode || 500);
+    const code = err.code === 11000 ? 'CONFLICT' : status >= 500 ? 'INTERNAL_ERROR' : typeof err.code === 'string' ? err.code : 'INVALID_REQUEST';
+    const message = status >= 500 ? 'Internal server error' : err.code === 11000 ? 'Conflicting assignment' : status === 400 ? 'Invalid request data' : err.message;
+    res.status(status).json({ error: code, message });
+  });
 
-export default app;
+  return app;
+}
+export default createApp();

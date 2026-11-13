@@ -6,15 +6,15 @@ import * as THREE from 'three';
 export const CAMERA_PRESETS = {
   // Enhanced front 3/4 commercial hero perspective showcasing front grille, hood, taxi sign & rims
   cinematic: {
-    position: [3.3, 1.35, 3.7],
+    position: [6.3, 3, 7.5],
     target: [0, 0.58, 0.15],
   },
   front: {
-    position: [0, 0.95, 4.4],
+    position: [0, 2.1, 8],
     target: [0, 0.55, 0.2],
   },
   side: {
-    position: [4.8, 1.05, 0],
+    position: [8.5, 2.1, 0],
     target: [0, 0.58, 0],
   },
   cockpit: {
@@ -22,7 +22,7 @@ export const CAMERA_PRESETS = {
     target: [0.36, 1.05, 3.8],
   },
   top: {
-    position: [0.1, 7.8, 0.1],
+    position: [0.1, 10, 0.1],
     target: [0, 0, 0],
   },
 };

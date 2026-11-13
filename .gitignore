@@ -1,0 +1,71 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build output
+dist/
+build/
+.vite/
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Trained ML models (large binary artifacts)
+ai-engine/models/*.pkl
+ai-engine/models/*.joblib
+ai-engine/models/*.h5
+
+# OSM road graph exports (large)
+data/osm/*.graphml
+data/osm/*.gpkg
+
+# Generated outputs
+ai-engine/outputs/
+
+# Database dumps
+*.dump
+*.bson
+dump/
+
+# Large datasets (commit samples only)
+data/raw/*.csv
+data/synthetic/*.csv
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Credentials — NEVER COMMIT
+*.pem
+*.key
+*.cert
+
+# Logs
+logs/
+*.log

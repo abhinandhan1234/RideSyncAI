@@ -6,21 +6,24 @@ import {
   Compass, 
   Navigation2, 
   History, 
-  User,
-  Layers
+  User
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 /**
  * FloatingBottomNav: The mandatory global floating Liquid Glass bottom navigation.
- * Uses a pill-shaped translucent glass container, taxi-yellow active illumination,
- * and fluid Framer Motion spring physics.
+ * Standard Passenger Navigation Items (Strict 5 items per specification):
+ * 1. Home
+ * 2. Book Ride
+ * 3. Track
+ * 4. Activity
+ * 5. Profile
  */
 export const FloatingBottomNav = ({ className = '' }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Navigation Items according to Master Specification
+  // Strict 5 Passenger Navigation Items per Master Specification
   const navItems = [
     {
       id: 'home',
@@ -52,12 +55,6 @@ export const FloatingBottomNav = ({ className = '' }) => {
       path: '/profile',
       icon: User,
     },
-    {
-      id: 'preview',
-      label: 'Preview',
-      path: '/design-preview',
-      icon: Layers,
-    },
   ];
 
   const currentPath = location.pathname;
@@ -68,7 +65,7 @@ export const FloatingBottomNav = ({ className = '' }) => {
       className={cn(
         'fixed left-1/2 -translate-x-1/2 z-40',
         'bottom-3 sm:bottom-6',
-        'w-[calc(100%-1.5rem)] max-w-[420px] sm:max-w-[480px]',
+        'w-[calc(100%-1.5rem)] max-w-[390px] sm:max-w-[440px]',
         'transition-all duration-300',
         className
       )}
@@ -147,4 +144,3 @@ export const FloatingBottomNav = ({ className = '' }) => {
 };
 
 export default FloatingBottomNav;
-

@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment } from '@react-three/drei';
+import * as THREE from 'three';
 import TaxiModel from './TaxiModel';
 import TaxiCamera from './TaxiCamera';
 
@@ -17,8 +18,35 @@ const ThreeLoadingFallback = () => {
 };
 
 /**
+ * StudioPlatform: Automotive showroom circular turntable floor
+ * with subtle rim reflection and metallic absorption.
+ */
+const StudioPlatform = () => {
+  return (
+    <group position={[0, -0.025, 0]}>
+      {/* Dark Circular Turntable Disc */}
+      <mesh receiveShadow position={[0, 0, 0]}>
+        <cylinderGeometry args={[5.2, 5.4, 0.05, 64]} />
+        <meshStandardMaterial
+          color="#080B11"
+          roughness={0.4}
+          metalness={0.65}
+          envMapIntensity={0.6}
+        />
+      </mesh>
+
+      {/* Outer Metallic Accent Rim */}
+      <mesh position={[0, 0.026, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[5.18, 5.24, 64]} />
+        <meshBasicMaterial color="#334155" opacity={0.6} transparent />
+      </mesh>
+    </group>
+  );
+};
+
+/**
  * TaxiScene: Complete 3D automotive studio canvas containing the Honda Taxi model,
- * studio lighting, contact shadows, and orbit camera controller.
+ * studio lighting, circular platform, contact shadows, and orbit camera controller.
  */
 export const TaxiScene = ({
   cameraPreset = 'cinematic',
@@ -37,20 +65,22 @@ export const TaxiScene = ({
       <Canvas
         shadows
         dpr={[1, 2]} // Balanced crispness and smartphone GPU performance
-        camera={{ position: [3.4, 1.45, 3.8], fov: 40 }}
+        camera={{ position: [3.3, 1.35, 3.7], fov: 40 }}
         gl={{
           antialias: true,
           alpha: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.15,
           powerPreference: 'high-performance',
         }}
         className="w-full h-full"
       >
         {/* Studio Ambient & Key Lighting */}
-        <ambientLight intensity={0.45} />
+        <ambientLight intensity={0.4} />
 
-        {/* Key Sunlight with Cast Shadow covering full enlarged vehicle length */}
+        {/* Primary Overhead Softbox Directional Light with Cast Shadow */}
         <directionalLight
-          position={[7, 10, 6]}
+          position={[6, 10, 5]}
           intensity={1.8}
           castShadow
           shadow-mapSize-width={1024}
@@ -64,17 +94,22 @@ export const TaxiScene = ({
           shadow-bias={-0.0003}
         />
 
-        {/* Rim & Fill Lights for automotive edge reflections */}
-        <directionalLight position={[-7, 5, -4]} intensity={0.8} color="#94A3B8" />
-        <directionalLight position={[0, 6, -6]} intensity={0.6} color="#38BDF8" />
+        {/* Front Grille Fill Light for front badges and headlights */}
+        <directionalLight position={[0, 2.5, 6]} intensity={0.65} color="#F8FAFC" />
+
+        {/* Cool Rim Light for crisp vehicle silhouettes */}
+        <directionalLight position={[-6, 4.5, -4]} intensity={0.9} color="#94A3B8" />
 
         <Suspense fallback={<ThreeLoadingFallback />}>
           {/* Environment Studio Reflection Map */}
           <Environment preset="city" />
 
-          {/* Actual Honda Taxi Model with Enlarged Hero Size */}
+          {/* Showroom Platform */}
+          <StudioPlatform />
+
+          {/* Actual Honda Taxi Model with Non-Destructive Rig */}
           <TaxiModel
-            scale={1.32}
+            scale={1.30}
             headlightsOn={headlightsOn}
             isDriving={isDriving}
             wheelSpeed={wheelSpeed}
@@ -83,14 +118,14 @@ export const TaxiScene = ({
             onModelLoaded={onModelLoaded}
           />
 
-          {/* Enhanced Ground Contact Shadows */}
+          {/* Realistic Ground Contact Shadows */}
           <ContactShadows
-            position={[0, 0, 0]}
-            opacity={0.82}
-            scale={13}
-            blur={2.2}
-            far={4.0}
-            color="#07090D"
+            position={[0, 0.005, 0]}
+            opacity={0.88}
+            scale={12}
+            blur={2.0}
+            far={3.0}
+            color="#020305"
           />
 
           {/* Interactive & Preset Camera Controls with Mobile Safe-Framing */}

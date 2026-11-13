@@ -5,12 +5,19 @@ import * as THREE from 'three';
 
 const MODEL_PATH = '/models/honda-taxi.glb';
 
+// Pre-computed mathematical wheel centers in original unmodified model coordinate space
+const WHEEL_CENTERS = {
+  back: new THREE.Vector3(0, 0.251, -1.143),
+  frontRight: new THREE.Vector3(0.689, 0.251, 1.296), // Mesh name Taxi_FrontLeftWheel_Cube.013 (+X)
+  frontLeft: new THREE.Vector3(-0.690, 0.251, 1.296),  // Mesh name Taxi_FrontRightWheel_Cube.014 (-X)
+};
+
 /**
- * TaxiModel: Renders the Honda Taxi GLB model with realistic automotive materials,
- * wheel spin rigging, headlight/taillight emissive controls, and ground alignment.
+ * TaxiModel: Renders the Honda Taxi GLB with high-end automotive materials,
+ * non-destructive pivot groups for wheel rotation, and realistic lighting.
  */
 export const TaxiModel = ({
-  scale = 1.32,
+  scale = 1.30,
   headlightsOn = true,
   isDriving = false,
   wheelSpeed = 10,
@@ -20,186 +27,206 @@ export const TaxiModel = ({
   ...props
 }) => {
   const groupRef = useRef();
-  const backWheelsRef = useRef();
-  const frontLeftWheelRef = useRef();
-  const frontRightWheelRef = useRef();
+  const backPivotRef = useRef();
+  const frontLeftPivotRef = useRef();
+  const frontRightPivotRef = useRef();
 
   // Load GLB model from public folder
   const gltf = useGLTF(MODEL_PATH);
 
-  // Clone scene so multiple instances don't share identical mutated state
-  const scene = useMemo(() => {
-    return gltf.scene.clone(true);
-  }, [gltf.scene]);
-
-  // Inspect hierarchy, configure automotive materials and center wheel pivots
-  const { wheelNodes, materialsList } = useMemo(() => {
-    const wheels = {
-      back: null,
-      frontLeft: null,
-      frontRight: null,
-    };
+  // Build automotive materials and non-destructive wheel pivot structure
+  const { assembledScene, materialsList, nodeInfo } = useMemo(() => {
+    // Clone GLTF scene graph without mutating the source asset
+    const root = gltf.scene.clone(true);
     const foundMaterials = [];
+    const foundNodes = [];
 
-    scene.traverse((child) => {
+    let chassisMesh = null;
+    let backWheelsMesh = null;
+    let frontRightWheelMesh = null;
+    let frontLeftWheelMesh = null;
+
+    // Traverse and apply premium automotive materials
+    root.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        foundNodes.push(child.name);
 
         const mat = child.material;
-        if (mat) {
-          if (!foundMaterials.includes(mat.name)) {
-            foundMaterials.push(mat.name);
-          }
-
-          // Clone material to avoid mutating global cache
-          const customMat = mat.clone();
-
-          // Automotive Yellow Body Paint
-          if (mat.name === 'Yellow' || mat.name.toLowerCase().includes('yellow')) {
-            customMat.color = new THREE.Color(accentColor);
-            customMat.roughness = 0.25;
-            customMat.metalness = 0.35;
-            customMat.envMapIntensity = 1.8;
-          }
-          // Tinted Automotive Glass
-          else if (mat.name === 'Windows' || mat.name.toLowerCase().includes('window')) {
-            customMat.color = new THREE.Color('#1E293B');
-            customMat.transparent = true;
-            customMat.opacity = 0.72;
-            customMat.roughness = 0.1;
-            customMat.metalness = 0.85;
-            customMat.envMapIntensity = 2.2;
-          }
-          // Headlights
-          else if (mat.name === 'Headlights' || mat.name.toLowerCase().includes('headlight')) {
-            customMat.color = new THREE.Color(headlightsOn ? '#FFFBEB' : '#E2E8F0');
-            customMat.emissive = new THREE.Color(headlightsOn ? '#FEF08A' : '#000000');
-            customMat.emissiveIntensity = headlightsOn ? 3.0 : 0.0;
-            customMat.roughness = 0.1;
-          }
-          // Taillights
-          else if (mat.name === 'TailLights' || mat.name.toLowerCase().includes('taillight')) {
-            customMat.color = new THREE.Color('#EF4444');
-            customMat.emissive = new THREE.Color(headlightsOn ? '#DC2626' : '#450A0A');
-            customMat.emissiveIntensity = headlightsOn ? 2.5 : 0.4;
-          }
-          // Tire Rubber
-          else if (mat.name === 'Black' || mat.name.toLowerCase().includes('black')) {
-            customMat.color = new THREE.Color('#111318');
-            customMat.roughness = 0.85;
-            customMat.metalness = 0.1;
-          }
-          // Metallic Rims / Trim
-          else if (mat.name === 'Grey' || mat.name.toLowerCase().includes('grey')) {
-            customMat.color = new THREE.Color('#94A3B8');
-            customMat.roughness = 0.3;
-            customMat.metalness = 0.8;
-          }
-
-          child.material = customMat;
+        if (mat && !foundMaterials.includes(mat.name)) {
+          foundMaterials.push(mat.name);
         }
 
-        // Identify wheel meshes
+        // Apply specialized automotive shader settings per material slot
+        if (mat.name === 'Yellow' || mat.name.toLowerCase().includes('yellow')) {
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color(accentColor),
+            roughness: 0.24,
+            metalness: 0.16,
+            clearcoat: 0.85,
+            clearcoatRoughness: 0.12,
+            reflectivity: 0.7,
+            envMapIntensity: 1.8,
+          });
+        } else if (mat.name === 'Windows' || mat.name.toLowerCase().includes('window')) {
+          child.material = new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color('#0A1120'),
+            roughness: 0.08,
+            metalness: 0.15,
+            transmission: 0.65,
+            transparent: true,
+            opacity: 0.88,
+            ior: 1.52,
+            envMapIntensity: 2.2,
+          });
+        } else if (mat.name === 'Headlights' || mat.name.toLowerCase().includes('headlight')) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#FFFBEB'),
+            emissive: new THREE.Color(headlightsOn ? '#FEF08A' : '#1C1917'),
+            emissiveIntensity: headlightsOn ? 2.8 : 0.0,
+            roughness: 0.1,
+            metalness: 0.2,
+          });
+        } else if (mat.name === 'TailLights' || mat.name.toLowerCase().includes('taillight')) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#DC2626'),
+            emissive: new THREE.Color(headlightsOn ? '#EF4444' : '#450A0A'),
+            emissiveIntensity: headlightsOn ? 2.2 : 0.3,
+            roughness: 0.2,
+          });
+        } else if (mat.name === 'Black' || mat.name.toLowerCase().includes('black')) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#16181D'),
+            roughness: 0.84,
+            metalness: 0.06,
+          });
+        } else if (mat.name === 'Grey' || mat.name.toLowerCase().includes('grey')) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#CBD5E1'),
+            roughness: 0.22,
+            metalness: 0.85,
+            envMapIntensity: 1.8,
+          });
+        }
+
+        // Categorize meshes
         if (child.name.includes('BackWheels')) {
-          wheels.back = child;
+          backWheelsMesh = child;
         } else if (child.name.includes('FrontLeftWheel')) {
-          wheels.frontLeft = child;
+          frontRightWheelMesh = child; // +X mesh
         } else if (child.name.includes('FrontRightWheel')) {
-          wheels.frontRight = child;
+          frontLeftWheelMesh = child; // -X mesh
+        } else {
+          chassisMesh = child;
         }
       }
     });
 
-    return { wheelNodes: wheels, materialsList: foundMaterials };
-  }, [scene, accentColor, headlightsOn]);
+    // Construct non-destructive hierarchical wheel pivot groups
+    // This allows wheels to rotate about their true axle center without displacing vertices
+    const carContainer = new THREE.Group();
+    carContainer.name = 'HondaTaxi_CarRig';
 
+    if (chassisMesh) {
+      carContainer.add(chassisMesh);
+    }
+
+    // Rear Wheels Pivot Group
+    const backPivot = new THREE.Group();
+    backPivot.name = 'Pivot_BackWheels';
+    backPivot.position.copy(WHEEL_CENTERS.back);
+    if (backWheelsMesh) {
+      backWheelsMesh.position.copy(WHEEL_CENTERS.back.clone().negate());
+      backPivot.add(backWheelsMesh);
+    }
+    carContainer.add(backPivot);
+
+    // Front-Right Wheel Pivot Group (+X)
+    const frontRightPivot = new THREE.Group();
+    frontRightPivot.name = 'Pivot_FrontRightWheel';
+    frontRightPivot.position.copy(WHEEL_CENTERS.frontRight);
+    if (frontRightWheelMesh) {
+      frontRightWheelMesh.position.copy(WHEEL_CENTERS.frontRight.clone().negate());
+      frontRightPivot.add(frontRightWheelMesh);
+    }
+    carContainer.add(frontRightPivot);
+
+    // Front-Left Wheel Pivot Group (-X)
+    const frontLeftPivot = new THREE.Group();
+    frontLeftPivot.name = 'Pivot_FrontLeftWheel';
+    frontLeftPivot.position.copy(WHEEL_CENTERS.frontLeft);
+    if (frontLeftWheelMesh) {
+      frontLeftWheelMesh.position.copy(WHEEL_CENTERS.frontLeft.clone().negate());
+      frontLeftPivot.add(frontLeftWheelMesh);
+    }
+    carContainer.add(frontLeftPivot);
+
+    return {
+      assembledScene: carContainer,
+      materialsList: foundMaterials,
+      nodeInfo: foundNodes,
+      pivots: {
+        back: backPivot,
+        frontRight: frontRightPivot,
+        frontLeft: frontLeftPivot,
+      },
+    };
+  }, [gltf.scene, accentColor, headlightsOn]);
+
+  // Hook references to the pivots
   useEffect(() => {
+    backPivotRef.current = assembledScene.getObjectByName('Pivot_BackWheels');
+    frontRightPivotRef.current = assembledScene.getObjectByName('Pivot_FrontRightWheel');
+    frontLeftPivotRef.current = assembledScene.getObjectByName('Pivot_FrontLeftWheel');
+
     if (onModelLoaded) {
       onModelLoaded({
-        nodes: [
-          'Taxi_Cube.009 (Body/Roof Sign)',
-          'Taxi_BackWheels_Cube.010 (Rear Wheels)',
-          'Taxi_FrontLeftWheel_Cube.013 (Front Left Wheel)',
-          'Taxi_FrontRightWheel_Cube.014 (Front Right Wheel)',
-        ],
+        nodes: nodeInfo,
         materials: materialsList,
+        triangles: 3278,
+        vertices: 6273,
         dimensions: { length: '4.22m', width: '1.80m', height: '1.31m' },
+        artist: 'Quaternius (Stylized Low-Poly)',
       });
     }
-  }, [onModelLoaded, materialsList]);
+  }, [assembledScene, onModelLoaded, nodeInfo, materialsList]);
 
-  // Wheel pivots setup: center wheel meshes for in-place axle rotation
-  useEffect(() => {
-    // Back wheels center: (0, 0.25, -1.14)
-    // Front Left center: (-0.74, 0.25, 1.30)
-    // Front Right center: (0.74, 0.25, 1.30)
-    if (wheelNodes.back && !wheelNodes.back.userData.centered) {
-      const bGeom = wheelNodes.back.geometry;
-      bGeom.computeBoundingBox();
-      const center = new THREE.Vector3();
-      bGeom.boundingBox.getCenter(center);
-      bGeom.center();
-      wheelNodes.back.position.copy(center);
-      wheelNodes.back.userData.centered = true;
-    }
-
-    if (wheelNodes.frontLeft && !wheelNodes.frontLeft.userData.centered) {
-      const flGeom = wheelNodes.frontLeft.geometry;
-      flGeom.computeBoundingBox();
-      const center = new THREE.Vector3();
-      flGeom.boundingBox.getCenter(center);
-      flGeom.center();
-      wheelNodes.frontLeft.position.copy(center);
-      wheelNodes.frontLeft.userData.centered = true;
-    }
-
-    if (wheelNodes.frontRight && !wheelNodes.frontRight.userData.centered) {
-      const frGeom = wheelNodes.frontRight.geometry;
-      frGeom.computeBoundingBox();
-      const center = new THREE.Vector3();
-      frGeom.boundingBox.getCenter(center);
-      frGeom.center();
-      wheelNodes.frontRight.position.copy(center);
-      wheelNodes.frontRight.userData.centered = true;
-    }
-  }, [wheelNodes]);
-
-  // Frame Loop: Smooth wheel rotation when driving
+  // Frame Loop: Smooth axle rotation when driving
   useFrame((_, delta) => {
     if (isDriving) {
       const rotStep = wheelSpeed * delta;
-      if (wheelNodes.back) wheelNodes.back.rotation.x += rotStep;
-      if (wheelNodes.frontLeft) wheelNodes.frontLeft.rotation.x += rotStep;
-      if (wheelNodes.frontRight) wheelNodes.frontRight.rotation.x += rotStep;
+      if (backPivotRef.current) backPivotRef.current.rotation.x += rotStep;
+      if (frontRightPivotRef.current) frontRightPivotRef.current.rotation.x += rotStep;
+      if (frontLeftPivotRef.current) frontLeftPivotRef.current.rotation.x += rotStep;
     }
   });
 
   return (
     <group ref={groupRef} scale={scale} {...props} dispose={null}>
-      {/* 3D Model Instance centered */}
-      <primitive object={scene} />
+      {/* Assembled Vehicle Rig */}
+      <primitive object={assembledScene} />
 
-      {/* Headlight Beam Spotlights */}
+      {/* Headlight Projected Beams */}
       {headlightsOn && (
         <>
           <spotLight
-            position={[-0.65, 0.6, 2.1]}
-            target-position={[-0.65, 0.1, 7]}
-            angle={0.45}
-            penumbra={0.6}
-            intensity={4}
+            position={[-0.7, 0.62, 2.15]}
+            target-position={[-0.7, 0.1, 7]}
+            angle={0.42}
+            penumbra={0.65}
+            intensity={4.2}
             color="#FEF08A"
-            distance={10}
+            distance={11}
           />
           <spotLight
-            position={[0.65, 0.6, 2.1]}
-            target-position={[0.65, 0.1, 7]}
-            angle={0.45}
-            penumbra={0.6}
-            intensity={4}
+            position={[0.7, 0.62, 2.15]}
+            target-position={[0.7, 0.1, 7]}
+            angle={0.42}
+            penumbra={0.65}
+            intensity={4.2}
             color="#FEF08A"
-            distance={10}
+            distance={11}
           />
         </>
       )}
@@ -208,9 +235,9 @@ export const TaxiModel = ({
       {underglow && (
         <pointLight
           position={[0, 0.18, 0]}
-          intensity={1.5}
+          intensity={1.6}
           color="#F59E0B"
-          distance={3.8}
+          distance={4.2}
         />
       )}
     </group>
@@ -220,4 +247,3 @@ export const TaxiModel = ({
 useGLTF.preload(MODEL_PATH);
 
 export default TaxiModel;
-

@@ -102,7 +102,8 @@ An interactive simulation sandbox inside the Admin view allowing judges to toggl
 
 ```text
 RideSyncAI/
-├── client/                   # Liquid Glass React + Vite Frontend (Three.js Honda Taxi 3D)
+├── frontend/                 # Current cinematic UI, maps and authenticated booking
+├── client/                   # Legacy source; npm scripts forward to frontend/
 │   ├── src/
 │   │   ├── components/       # GlassPanel, GlassButton, FloatingBottomNav, TopHeader
 │   │   ├── three/            # TaxiModel, TaxiScene, TaxiCamera (R3F)
@@ -154,13 +155,30 @@ RideSyncAI/
 
 ## Local Setup
 
-### 1 · Frontend (Client)
+### Quick start (from the repository root)
 
 ```bash
-cd client
-npm install
-npm run dev                 # starts Vite dev server on :5173
+npm run install:local
+npm run local
 ```
+
+Open http://localhost:5173/book. The current page says **Where are we taking you?**
+and displays a map with teal/sea-glass controls. If you see the orange **Phase 1
+Foundation Active** placeholder, stop the old server, update your checkout, and
+restart with the commands above. See [LOCAL_SETUP.md](LOCAL_SETUP.md).
+
+### 1 · Frontend only
+
+```bash
+cd frontend
+npm ci
+npm run dev -- --port 5173 --strictPort
+```
+
+`frontend/` is the application root for development and deployment; production
+output is `frontend/dist`. Legacy `client/` npm commands forward here so they no
+longer launch the obsolete UI. Running `npm install` in `client/` also installs
+the current frontend dependencies.
 
 ### 2 · Backend
 
@@ -168,7 +186,7 @@ npm run dev                 # starts Vite dev server on :5173
 cd backend
 npm install
 cp .env.example .env        # edit MONGODB_URI, JWT_SECRET, etc.
-npm run dev                 # starts Express + Socket.IO on :5000
+npm run dev                 # starts Express + Socket.IO on :5002
 ```
 
 ### 3 · AI Engine

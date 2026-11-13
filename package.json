@@ -7,7 +7,7 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
-    "dev:client": "npm --prefix client run dev",
+    "dev:client": "npm --prefix frontend run dev",
     "server": "npm --prefix backend run dev",
     "server:starter": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run dev",
     "seed:demo": "npm --prefix ridesync-belagavi-mongodb-starter/ridesync-belagavi-starter/server run seed:demo",

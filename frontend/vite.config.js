@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: { '/socket.io': {target:process.env.VITE_API_PROXY || 'http://127.0.0.1:5002',ws:true}, '/api': { target: process.env.VITE_API_PROXY || 'http://127.0.0.1:5002', changeOrigin: true } },
+    host: '0.0.0.0',
+    proxy: { '/socket.io': {target:process.env.VITE_API_PROXY || 'http://127.0.0.1:5002',ws:true}, '/uploads': { target: process.env.VITE_API_PROXY || 'http://127.0.0.1:5002', changeOrigin: true }, '/api': { target: process.env.VITE_API_PROXY || 'http://127.0.0.1:5002', changeOrigin: true } },
   },
 })

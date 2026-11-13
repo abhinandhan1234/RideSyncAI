@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import {Server} from 'socket.io';
 import {Ride,Driver} from '../models/index.js';
+import {corsOrigin} from '../config/client-origins.js';
 
 export function attachSockets(server,app){
- const io=new Server(server,{cors:{origin:process.env.CLIENT_ORIGIN||'http://localhost:5173'}});
+ const io=new Server(server,{cors:{origin:corsOrigin,credentials:true}});
  app.set('io',io);
  io.use((socket,next)=>{
   try{socket.data.user=jwt.verify(socket.handshake.auth.token,process.env.JWT_SECRET);next();}

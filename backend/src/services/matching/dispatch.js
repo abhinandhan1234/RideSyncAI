@@ -2,11 +2,12 @@ import {Driver,Ride,RideOffer,RideEvent} from '../../models/index.js';
 import {ai} from '../ps2/client.js';
 const timeout=()=>Number(process.env.OFFER_TIMEOUT_MS||20000);
 const maxAttempts=()=>Number(process.env.MAX_ASSIGNMENT_ATTEMPTS||5);
+const productionVerification=()=>process.env.NODE_ENV==='production'?{approvalStatus:'APPROVED','verification.aadhaar.status':'VERIFIED','verification.aadhaar.provider':'CASHFREE','verification.aadhaar.mode':'live','verification.drivingLicense.status':'VERIFIED','verification.drivingLicense.provider':'CASHFREE','verification.drivingLicense.mode':'live'}:{};
 export const record=(rideId,type,details={})=>RideEvent.create({rideId,type,details});
 export async function release(driverId,rideId){await Driver.updateOne({_id:driverId,activeRideId:rideId},{$set:{status:'AVAILABLE',activeRideId:null,idleSince:new Date(),currentWorkload:0}});}
 async function dispatchOnce(rideId,io){const ride=await Ride.findById(rideId);if(!ride||!['REQUESTED','REASSIGNING'].includes(ride.status))return;
  if(ride.attemptCount>=maxAttempts()){await Ride.updateOne({_id:rideId,status:ride.status},{$set:{status:'FAILED'}});await record(rideId,'FAILED');return;}
- const excluded=await RideOffer.distinct('driverId',{rideId});const candidates=await Driver.find({zoneCode:/^Z0[1-8]$/,status:'AVAILABLE',activeRideId:null,'vehicle.capacity':{$gte:ride.passengerCount},...(ride.requestedVehicleType?{'vehicle.type':ride.requestedVehicleType}:{}) ,_id:{$nin:excluded},location:{$near:{$geometry:ride.pickup,$maxDistance:5000}}}).limit(40).lean();
+ const excluded=await RideOffer.distinct('driverId',{rideId});const candidates=await Driver.find({zoneCode:/^Z0[1-8]$/,status:'AVAILABLE',activeRideId:null,...productionVerification(),'vehicle.capacity':{$gte:ride.passengerCount},...(ride.requestedVehicleType?{'vehicle.type':ride.requestedVehicleType}:{}) ,_id:{$nin:excluded},location:{$near:{$geometry:ride.pickup,$maxDistance:5000}}}).limit(40).lean();
  const policy=process.env.PS2_DISPATCH_POLICY||'constrained';
  const penalty=Number(process.env.PS2_ETA_PENALTY_MINUTES??1);
  if(!['nearest','eta','weighted','constrained'].includes(policy)||!Number.isFinite(penalty)||penalty<0) throw Error('Invalid dispatch configuration');

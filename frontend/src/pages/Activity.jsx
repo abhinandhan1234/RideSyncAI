@@ -1,80 +1,10 @@
-import React from 'react';
-import { History, Calendar, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useRide } from '../context/RideContext';
+import { apiRequest } from '../services/api';
 import GlassPanel from '../components/glass/GlassPanel';
-import GlassCard from '../components/glass/GlassCard';
-
-export const Activity = () => {
-  const pastTrips = [
-    {
-      id: 'trip-1',
-      date: 'Today, 11:20 AM',
-      from: 'Belagavi Railway Station (SBC)',
-      to: 'KLE Dr. Prabhakar Kore Hospital',
-      fare: '₹124.00',
-      status: 'Completed',
-    },
-    {
-      id: 'trip-2',
-      date: 'Yesterday, 04:45 PM',
-      from: 'Tilakwadi 2nd Gate',
-      to: 'Central Bus Terminus (CBT)',
-      fare: '₹88.50',
-      status: 'Completed',
-    },
-    {
-      id: 'trip-3',
-      date: '10 Nov, 08:30 AM',
-      from: 'Bogarves Circle',
-      to: 'VTU Main Campus',
-      fare: '₹240.00',
-      status: 'Completed',
-    },
-  ];
-
-  return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/40 text-accent flex items-center justify-center">
-          <History className="w-5 h-5" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-text-primary">Trip Activity</h1>
-          <p className="text-xs text-text-secondary">Past journeys and fare receipts in Belagavi</p>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {pastTrips.map((trip) => (
-          <GlassCard
-            key={trip.id}
-            title={trip.to}
-            subtitle={`From: ${trip.from}`}
-            interactive
-            badge={
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" />
-                {trip.status}
-              </span>
-            }
-            footer={
-              <>
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3 text-text-muted" />
-                  {trip.date}
-                </span>
-                <span className="text-accent font-semibold">{trip.fare}</span>
-              </>
-            }
-          >
-            <p className="text-xs text-text-secondary">
-              Dispatched via Multi-Factor Algorithm • 4.2 km traveled
-            </p>
-          </GlassCard>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export default Activity;
-
+export default function Activity(){
+  const {auth}=useRide();const [rides,setRides]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(false);
+  useEffect(()=>{if(auth?.user.role!=='passenger')return;const controller=new AbortController();setLoading(true);apiRequest('/rides/history',{token:auth.accessToken,signal:controller.signal}).then(data=>setRides(data.rides)).catch(e=>{if(e.name!=='AbortError')setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[auth]);
+  return <section className="max-w-3xl mx-auto space-y-5"><div className="page-heading"><div><p className="page-eyebrow">YOUR JOURNEYS</p><h1>Trip activity</h1><p>Persisted rides from your passenger account.</p></div></div>{!auth&&<Link to="/login/passenger" className="text-accent">Sign in to see your history →</Link>}{loading&&<p role="status">Loading rides…</p>}{error&&<p role="alert" className="ride-error">{error}</p>}{auth&&!loading&&!rides.length&&<p className="text-text-secondary">No booked rides yet. Simulations are not saved as real trips.</p>}{rides.map(ride=><GlassPanel key={ride._id} className="p-5 space-y-3"><div className="flex justify-between gap-4"><h2>{ride.status}</h2><span>₹{ride.fare?.total?.toFixed(2)??'—'}</span></div><p className="text-xs text-text-secondary break-all">{ride._id}</p><p className="text-sm text-text-secondary">{new Date(ride.requestedAt||ride.createdAt).toLocaleString()}</p></GlassPanel>)}</section>;
+}

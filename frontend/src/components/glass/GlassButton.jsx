@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
 /**
- * GlassButton: Premium tactile translucent or taxi-yellow button.
+ * GlassButton: Premium tactile translucent or sea-glass button.
  * Enforces >= 44px touch target on mobile devices.
  */
 export const GlassButton = React.forwardRef(({
@@ -27,8 +27,8 @@ export const GlassButton = React.forwardRef(({
   };
 
   const variantStyles = {
-    // Taxi Yellow accent button
-    primary: 'bg-accent text-slate-950 font-bold hover:bg-accent-hover shadow-accent-glow border border-amber-300/40 active:brightness-95',
+    // Sea Glass accent button
+    primary: 'bg-accent text-slate-950 font-bold hover:bg-accent-hover shadow-accent-glow border border-accent/40 active:brightness-95',
     // Translucent Liquid Glass button
     glass: 'bg-white/[0.09] hover:bg-white/[0.14] text-text-primary border border-white/[0.16] hover:border-white/[0.26] shadow-glass-sm backdrop-blur-md active:bg-white/[0.06]',
     // Subtle glassy pill

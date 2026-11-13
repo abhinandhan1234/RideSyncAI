@@ -1,8 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Compass, ShieldCheck, Zap, Navigation2 } from 'lucide-react';
-import GlassPanel from '../components/glass/GlassPanel';
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Navigation2 } from 'lucide-react';
 import GlassButton from '../components/glass/GlassButton';
 import GlassCard from '../components/glass/GlassCard';
 
@@ -30,7 +29,7 @@ export const Home = () => {
           className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-primary max-w-2xl mx-auto leading-tight"
         >
           Your City. Your Ride. <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-amber-300 to-yellow-500">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-accent to-accent">
             Smarter Connections.
           </span>
         </motion.h1>

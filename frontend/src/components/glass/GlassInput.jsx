@@ -3,7 +3,7 @@ import { cn } from '../../utils/cn';
 
 /**
  * GlassInput: Frosted glass form input with floating label support,
- * leading icon slot, and taxi-yellow focus illumination.
+ * leading icon slot, and sea-glass focus illumination.
  */
 export const GlassInput = React.forwardRef(({
   label,
@@ -18,7 +18,8 @@ export const GlassInput = React.forwardRef(({
   disabled = false,
   ...props
 }, ref) => {
-  const generatedId = id || React.useId();
+  const automaticId = React.useId();
+  const generatedId = id || automaticId;
 
   return (
     <div className={cn('w-full flex flex-col gap-1.5', wrapperClassName)}>

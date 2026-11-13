@@ -16,10 +16,10 @@ export const AppShell = ({
   contentClassName = '',
 }) => {
   return (
-    <div className="relative min-h-screen w-full bg-bg-primary text-text-primary flex flex-col bg-ambient-grid overflow-x-hidden">
+    <div className={cn("relative min-h-screen w-full bg-bg-primary text-text-primary flex flex-col bg-ambient-grid overflow-x-hidden", className)}>
       {/* Background ambient lighting accents */}
       <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-accent/[0.04] blur-[120px] rounded-full" />
-      <div className="pointer-events-none fixed -bottom-40 right-10 w-[450px] h-[350px] bg-blue-500/[0.03] blur-[140px] rounded-full" />
+      <div className="pointer-events-none fixed -bottom-40 right-10 w-[450px] h-[350px] bg-accent/[0.03] blur-[140px] rounded-full" />
 
       {/* Top Header */}
       {showHeader && <TopHeader />}

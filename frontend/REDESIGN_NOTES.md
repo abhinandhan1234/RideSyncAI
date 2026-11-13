@@ -1,3 +1,5 @@
+> Historical cinematic redesign notes. Later auth, booking and map integration supersedes integration-pending statements below; see `../docs/INTEGRATION_REPORT.md`.
+
 # Cinematic landing implementation
 
 Branch: `feature/cinematic-landing`. No commits, pushes, merges or publication

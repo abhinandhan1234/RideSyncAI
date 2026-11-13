@@ -1,12 +1,12 @@
-# Booking API (implemented)
+# Isolated transactional demo API
 
-Base URL: `http://localhost:5002/api`. JSON bodies; errors are
+Base URL: `http://localhost:5002/api/demo`. JSON bodies; errors are
 `{error: "CODE", message: "description"}`. IDs are strings. Statuses are lowercase.
 This backend implements the supplied booking specification; the root
 `docs/API_CONTRACTS.md` remains a proposed, broader interface owned by the team.
-The frontend currently has no booking API calls. It must wire submission separately.
+The frontend uses the separate authenticated API at `/api`. This legacy demo API is mounted only with `ENABLE_BOOKING_DEMO=true`.
 
-Contract differences: explicit `passengerId` is required (no existing auth service),
+Contract differences: explicit `passengerId` is required (this isolated demo does not use the canonical auth service),
 POST rides returns 201 with the dispatched ride, statuses are lowercase,
 `/offers/:offerId/accept|reject` replace the proposed nested respond endpoint,
 and `/rides/:id/start|complete` replace the proposed PATCH status endpoint.
@@ -42,7 +42,7 @@ offers return 409; missing resources 404; malformed input 400.
 
 Example booking:
 ```sh
-curl -X POST http://localhost:5002/api/rides -H 'Content-Type: application/json' \
+curl -X POST http://localhost:5002/api/demo/rides -H 'Content-Type: application/json' \
   -d '{"passengerId":"P001","pickup":{"lat":15.8497,"lng":74.4977},"dropoff":{"lat":15.8601,"lng":74.5112},"passengerCount":1}'
 ```
 Use the returned offerId to reject, then the replacement offerId to accept;

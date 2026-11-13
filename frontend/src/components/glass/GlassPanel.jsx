@@ -18,8 +18,8 @@ export const GlassPanel = React.forwardRef(({
   const variantStyles = {
     default: 'bg-white/[0.08] backdrop-blur-glass border-white/[0.14] shadow-glass-md',
     subtle: 'bg-white/[0.04] backdrop-blur-md border-white/[0.08] shadow-glass-sm',
-    modal: 'bg-slate-900/85 backdrop-blur-heavy border-white/[0.18] shadow-glass-lg',
-    accent: 'bg-amber-500/[0.08] backdrop-blur-glass border-amber-500/30 shadow-glass-md',
+    modal: 'bg-bg-secondary/85 backdrop-blur-heavy border-white/[0.18] shadow-glass-lg',
+    accent: 'bg-accent/[0.08] backdrop-blur-glass border-accent/30 shadow-glass-md',
   };
 
   const interactiveStyles = interactive

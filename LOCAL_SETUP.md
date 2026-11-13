@@ -1,7 +1,7 @@
 # Run RideSync on your computer
 
 This source package includes the cinematic frontend and the booking backend from
-this session. Nothing has been pushed to GitHub. Download/extract the ZIP first;
+this session. Download/extract the ZIP or clone the repository first;
 commands must run in the extracted `RideSyncAI` folder on **your computer**, not in
 the cloud terminal. `localhost` will then refer to your own computer.
 
@@ -27,27 +27,36 @@ Wait for both servers to say they are ready, then open:
 - Backend health: http://localhost:5002/api/health
 
 The launcher runs the existing primary backend with a disposable MongoDB replica
-set and three synthetic drivers. It never connects to your production database.
+set, zone Z01 and three synthetic drivers for the isolated transactional demo API. It never connects to your production database.
 Demo records disappear when it stops. The initial MongoDB download may take a few
 minutes. Leave the terminal open; press Ctrl+C to stop. If a port is already used,
 stop its previous server first. The launch script works from paths containing spaces.
 
-The frontend forwards `/api` requests to the backend. Passenger/Captain login
-screens explicitly show integration pending: there is no backend auth service.
-The preserved Book Ride page is still a placeholder; the full booking lifecycle
-is exercised through the backend API, described in `backend/docs/API.md`.
+The frontend forwards `/api` requests to the backend. Book Ride offers a clearly
+labeled simulation and authenticated backend booking. Select pickup/drop-off on
+the map or enter coordinates; road routing requires Internet access to OSRM and
+map tiles require OpenStreetMap. Passenger registration/login is implemented.
+Captain accounts require administrator provisioning in the canonical database.
+The disposable setup does not seed canonical drivers, so backend booking without
+provisioned drivers ends unmatched. The isolated `/api/demo` has its own synthetic
+drivers and contract in `backend/docs/API.md`.
+
+Auth tokens and active frontend ride state are held in memory. In-app navigation
+preserves them; reloading requires signing in again. Backend ride history persists
+for the lifetime of the database. Simulation movement is not live GPS.
 
 ## Persistent database
 
 Copy `backend/.env.example` to `backend/.env` with your file manager. Set
-`MONGODB_URI` to your own Atlas or MongoDB replica-set database, then run:
+`MONGODB_URI` to your own database and `JWT_SECRET` to a random secret of at least
+32 characters, then run:
 
 ```sh
 npm run local:persistent
 ```
 
-An empty persistent database has no drivers until you provision them. Standalone
-MongoDB is unsupported by the current booking backend; it requires transactions.
+An empty persistent database has no drivers until you provision them. Canonical booking supports standalone MongoDB. The optional `/api/demo` requires
+a replica set; leave `ENABLE_BOOKING_DEMO=false` for normal use.
 Never put a database URI or secret into frontend configuration.
 
 ## Run independently

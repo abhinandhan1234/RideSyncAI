@@ -1,15 +1,17 @@
 import {test} from 'node:test';
+import {MongoMemoryReplSet} from 'mongodb-memory-server';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import app from '../src/app.js';
 import {User,Driver,Ride,RideOffer,Zone} from '../src/models/index.js';
-import {expireOffers} from '../src/services/matching/dispatch.js';
+import {expireOffers,drainDispatch} from '../src/services/matching/dispatch.js';
 import {attachSockets} from '../src/sockets/index.js';
 
-const uri=process.env.TEST_MONGODB_URI;
-test('MongoDB booking, rejection, reassignment, acceptance, completion and failures', {skip:!uri}, async()=>{
+test('MongoDB booking, rejection, reassignment, acceptance, completion and failures', async()=>{
+ const mongo=await MongoMemoryReplSet.create({replSet:{count:1},binary:{version:'7.0.24'}});
+ const uri=mongo.getUri('ridesync_belagavi_test');
  const database=new URL(uri).pathname.slice(1);
  assert.equal(database,'ridesync_belagavi_test','Tests require the isolated database');
  process.env.JWT_SECRET ||= 'local-test-secret-that-is-at-least-32-characters';
@@ -119,5 +121,5 @@ test('MongoDB booking, rejection, reassignment, acceptance, completion and failu
   assert.equal(contenders.filter(ride=>ride.status==='FAILED').length,1);
   assert.equal((await Driver.findById(drivers[0]._id)).status,'RESERVED');
   passengerSocket.ws.close();driverSocket.ws.close();
- }finally{await new Promise(resolve=>io.close(resolve));await new Promise(resolve=>server.close(resolve));await mongoose.disconnect();}
+ }finally{await drainDispatch();await new Promise(resolve=>io.close(resolve));await new Promise(resolve=>server.close(resolve));await mongoose.disconnect();await mongo.stop();}
 });

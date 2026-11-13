@@ -1,11 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  Compass, 
-  Navigation2, 
-  History, 
+import {
+  Home,
+  Compass,
+  Navigation2,
+  History,
   User
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -79,7 +79,7 @@ export const FloatingBottomNav = ({ className = '' }) => {
         <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
         {navItems.map((item) => {
-          const isActive = currentPath === item.path || 
+          const isActive = currentPath === item.path ||
             (item.path !== '/' && currentPath.startsWith(item.path));
           const Icon = item.icon;
 
@@ -109,8 +109,8 @@ export const FloatingBottomNav = ({ className = '' }) => {
                 <Icon
                   className={cn(
                     'w-4 h-4 sm:w-5 sm:h-5 transition-colors duration-200',
-                    isActive 
-                      ? 'text-accent drop-shadow-[0_0_8px_rgba(245,158,11,0.6)] stroke-[2.2]' 
+                    isActive
+                      ? 'text-accent drop-shadow-[0_0_8px_rgba(168,197,191,0.6)] stroke-[2.2]'
                       : 'text-text-secondary/80 group-hover:text-text-primary stroke-[1.8]'
                   )}
                 />
@@ -120,8 +120,8 @@ export const FloatingBottomNav = ({ className = '' }) => {
               <span
                 className={cn(
                   'relative z-10 text-[10px] sm:text-[11px] font-medium tracking-tight truncate max-w-full transition-colors duration-200',
-                  isActive 
-                    ? 'text-accent font-semibold' 
+                  isActive
+                    ? 'text-accent font-semibold'
                     : 'text-text-secondary/70 group-hover:text-text-primary'
                 )}
               >
@@ -132,7 +132,7 @@ export const FloatingBottomNav = ({ className = '' }) => {
               {isActive && (
                 <motion.span
                   layoutId="activeDot"
-                  className="absolute bottom-1 w-1 h-1 rounded-full bg-accent shadow-[0_0_6px_#F59E0B]"
+                  className="absolute bottom-1 w-1 h-1 rounded-full bg-accent shadow-[0_0_6px_#A8C5BF]"
                 />
               )}
             </button>

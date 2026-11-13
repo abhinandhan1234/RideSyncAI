@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   RotateCw, 
   Lightbulb, 
@@ -26,7 +25,7 @@ export const Taxi3DPreview = () => {
   const [headlightsOn, setHeadlightsOn] = useState(true);
   const [isDriving, setIsDriving] = useState(false);
   const [underglow, setUnderglow] = useState(true);
-  const [modelDetails, setModelDetails] = useState(null);
+  const [_modelDetails, setModelDetails] = useState(null);
   const [activeTab, setActiveTab] = useState('controls'); // 'controls' | 'audit' | 'materials' | 'specs'
 
   const cameraOptions = [
@@ -56,7 +55,7 @@ export const Taxi3DPreview = () => {
 
         {/* Live Model Status Badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold backdrop-blur-md">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent/10 border border-accent/25 text-accent text-xs font-semibold backdrop-blur-md">
             <span>Stylized Low-Poly (3.2K Tris)</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold backdrop-blur-md">
@@ -152,7 +151,7 @@ export const Taxi3DPreview = () => {
               onClick={() => setHeadlightsOn(!headlightsOn)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 headlightsOn
-                  ? 'bg-amber-400/20 border border-amber-400/40 text-amber-300'
+                  ? 'bg-accent/20 border border-accent/40 text-accent'
                   : 'bg-white/[0.05] border border-white/[0.08] text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -345,7 +344,7 @@ export const Taxi3DPreview = () => {
                 </div>
                 <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                   <span className="text-text-muted">Textures / UVs</span>
-                  <p className="text-base font-bold text-amber-400 mt-0.5">0 Textures</p>
+                  <p className="text-base font-bold text-accent mt-0.5">0 Textures</p>
                   <p className="text-[10px] text-text-muted">HasUVs = false</p>
                 </div>
                 <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
@@ -356,8 +355,8 @@ export const Taxi3DPreview = () => {
               </div>
 
               {/* Assessment & Recommendation Box */}
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-amber-400 font-semibold">
+              <div className="p-4 rounded-xl bg-accent/10 border border-accent/25 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-accent font-semibold">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>Model Quality Assessment & Strategic Recommendation</span>
                 </div>
@@ -395,7 +394,7 @@ export const Taxi3DPreview = () => {
                 </div>
                 <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                   <span className="font-semibold text-text-primary">Headlights</span>
-                  <p className="text-[11px] text-amber-300 mt-0.5">Emissive Intensity 2.8</p>
+                  <p className="text-[11px] text-accent mt-0.5">Emissive Intensity 2.8</p>
                 </div>
                 <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                   <span className="font-semibold text-text-primary">TailLights</span>

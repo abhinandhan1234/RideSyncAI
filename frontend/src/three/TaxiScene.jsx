@@ -13,7 +13,7 @@ const ThreeLoadingFallback = () => {
   return (
     <mesh position={[0, 0.65, 0]}>
       <boxGeometry args={[0.6, 0.6, 0.6]} />
-      <meshStandardMaterial color="#F59E0B" wireframe />
+      <meshStandardMaterial color="#A8C5BF" wireframe />
     </mesh>
   );
 };
@@ -57,7 +57,7 @@ export const TaxiScene = ({
   isDriving = false,
   wheelSpeed = 12,
   underglow = true,
-  accentColor = '#F59E0B',
+  accentColor = '#A8C5BF',
   onModelLoaded,
   className = '',
 }) => {
@@ -97,10 +97,10 @@ export const TaxiScene = ({
         />
 
         {/* Front Grille Fill Light for front badges and headlights */}
-        <directionalLight position={[0, 2.5, 6]} intensity={0.65} color="#F8FAFC" />
+        <directionalLight position={[0, 2.5, 6]} intensity={0.65} color="#F2F3EF" />
 
         {/* Cool Rim Light for crisp vehicle silhouettes */}
-        <directionalLight position={[-6, 4.5, -4]} intensity={0.9} color="#94A3B8" />
+        <directionalLight position={[-6, 4.5, -4]} intensity={0.9} color="#A8C5BF" />
 
         <Suspense fallback={<ThreeLoadingFallback />}>
           {/* Environment Studio Reflection Map */}

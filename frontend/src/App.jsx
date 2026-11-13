@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import AppShell from './components/layout/AppShell';
 import CinematicLanding from './pages/CinematicLanding';
 import RoleLogin from './pages/auth/RoleLogin';
+import { RideProvider } from './context/RideContext';
+import CaptainDashboard from './pages/CaptainDashboard';
 import Booking from './pages/Booking';
 import Tracking from './pages/Tracking';
 import Activity from './pages/Activity';
@@ -25,12 +27,14 @@ const ApplicationPage = ({children}) => <AppShell>{children}</AppShell>;
 export function App() {
   return (
     <BrowserRouter>
+      <RideProvider>
       <ScrollReset />
       <Suspense fallback={<div role="status" style={{padding:80}}>Loading experience…</div>}>
         <Routes>
           <Route path="/" element={<CinematicLanding />} />
           <Route path="/login/passenger" element={<RoleLogin role="passenger" />} />
           <Route path="/login/captain" element={<RoleLogin role="captain" />} />
+          <Route path="/captain" element={<ApplicationPage><CaptainDashboard /></ApplicationPage>} />
           <Route path="/book" element={<ApplicationPage><Booking /></ApplicationPage>} />
           <Route path="/track" element={<ApplicationPage><Tracking /></ApplicationPage>} />
           <Route path="/activity" element={<ApplicationPage><Activity /></ApplicationPage>} />
@@ -40,6 +44,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+    </RideProvider>
     </BrowserRouter>
   );
 }

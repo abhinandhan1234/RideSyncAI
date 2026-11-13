@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   Sparkles, 
   MapPin, 
@@ -62,7 +61,7 @@ export const DesignSystemPreview = () => {
                 Liquid Glass Design System
               </h1>
               <p className="text-sm sm:text-base text-text-secondary leading-relaxed">
-                Apple-inspired translucent surfaces, tactile controls, mobile-first responsive geometry, and taxi-yellow active illumination tailored for Belagavi smart mobility.
+                Apple-inspired translucent surfaces, tactile controls, mobile-first responsive geometry, and sea-glass active illumination tailored for Belagavi smart mobility.
               </p>
             </div>
 
@@ -104,7 +103,7 @@ export const DesignSystemPreview = () => {
             <div className="w-7 h-7 rounded-lg bg-bg-primary border border-white/20" />
             <div>
               <p className="text-xs font-semibold text-text-primary">Primary Bg</p>
-              <p className="text-[11px] font-mono text-text-muted">#0B0F14</p>
+              <p className="text-[11px] font-mono text-text-muted">#111C21</p>
             </div>
           </GlassPanel>
 
@@ -112,15 +111,15 @@ export const DesignSystemPreview = () => {
             <div className="w-7 h-7 rounded-lg bg-bg-secondary border border-white/20" />
             <div>
               <p className="text-xs font-semibold text-text-primary">Secondary Bg</p>
-              <p className="text-[11px] font-mono text-text-muted">#111827</p>
+              <p className="text-[11px] font-mono text-text-muted">#263B43</p>
             </div>
           </GlassPanel>
 
-          <GlassPanel className="p-4 flex flex-col justify-between h-28 border-amber-500/30">
+          <GlassPanel className="p-4 flex flex-col justify-between h-28 border-accent/30">
             <div className="w-7 h-7 rounded-lg bg-accent shadow-accent-glow" />
             <div>
-              <p className="text-xs font-semibold text-accent">Taxi Yellow</p>
-              <p className="text-[11px] font-mono text-text-muted">#F59E0B</p>
+              <p className="text-xs font-semibold text-accent">Sea Glass</p>
+              <p className="text-[11px] font-mono text-text-muted">#A8C5BF</p>
             </div>
           </GlassPanel>
 
@@ -261,7 +260,7 @@ export const DesignSystemPreview = () => {
                     <p className="text-xs font-semibold truncate">{zone.name}</p>
                     <div className="flex items-center justify-between mt-1 text-[10px] text-text-muted">
                       <span>{zone.drivers} drivers</span>
-                      <span className={zone.demand === 'Surge' ? 'text-amber-400 font-bold' : ''}>
+                      <span className={zone.demand === 'Surge' ? 'text-accent font-bold' : ''}>
                         {zone.demand}
                       </span>
                     </div>
@@ -336,7 +335,7 @@ export const DesignSystemPreview = () => {
             title="Real-Time Telemetry"
             subtitle="Socket.IO Stream"
             badge={
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-[10px] font-semibold">
+              <span className="px-2 py-0.5 rounded-full bg-accent/15 border border-accent/30 text-accent text-[10px] font-semibold">
                 Online
               </span>
             }

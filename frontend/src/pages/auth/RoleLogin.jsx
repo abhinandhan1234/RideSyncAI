@@ -1,24 +1,37 @@
-import Arrow from '../../components/cinematic/Arrow';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import PublicNav from '../../components/cinematic/PublicNav';
 import TaxiIllustration from '../../components/cinematic/TaxiIllustration';
+import Arrow from '../../components/cinematic/Arrow';
+import { useRide } from '../../context/RideContext';
+import { apiRequest } from '../../services/api';
 import '../../components/cinematic/cinematic.css';
-
 export default function RoleLogin({role}) {
-  const captain=role==='captain';
+  const captain=role==='captain',navigate=useNavigate(),state=useRide();
+  const [register,setRegister]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  async function submit(event){
+    event.preventDefault();if(busy)return;setBusy(true);setError('');
+    const fields=new FormData(event.currentTarget),body={email:fields.get('email'),password:fields.get('password')};
+    if(register&&!captain){body.name=fields.get('name');body.role='passenger';}
+    try{
+      const data=await apiRequest(register&&!captain?'/auth/register':'/auth/login',{method:'POST',body});
+      if(!data.accessToken||data.user?.role!==(captain?'driver':'passenger'))throw new Error(`This account is not a ${captain?'driver':'passenger'} account. Choose the correct login.`);
+      state.reset();state.setAuth(data);state.setMode('backend');navigate(captain?'/captain':'/book');
+    }catch(e){setError(e.message);}finally{setBusy(false);}
+  }
   return <div className="cinematic login-page"><PublicNav/><main className="login-layout">
     <div className="login-intro"><p className="cinema-eyebrow">{captain?'CAPTAIN':'PASSENGER'} / RIDESYNC AI</p><h1>{captain?'Your city.':'Your next ride.'}<br/><em>{captain?'Your next chapter.':'A better beginning.'}</em></h1><TaxiIllustration/></div>
-    <section className="login-panel" aria-labelledby="login-title"><p className="cinema-eyebrow">WELCOME TO RIDESYNC</p><h2 id="login-title">{captain?'Captain':'Passenger'} login</h2>
-      <p className="login-pending" role="status">Authentication integration pending. Account sign-in is not available in this demo.</p>
-      <form aria-describedby="auth-note" onSubmit={event=>event.preventDefault()}>
-        <label htmlFor="email">Email address</label><input id="email" name="email" type="email" autoComplete="username" placeholder="you@example.com" disabled/>
-        <label htmlFor="password">Password</label><input id="password" name="password" type="password" autoComplete="current-password" placeholder="Your password" disabled/>
-        <button type="submit" disabled>Sign in — coming soon <span><Arrow/></span></button>
+    <section className="login-panel" aria-labelledby="login-title"><p className="cinema-eyebrow">WELCOME TO RIDESYNC</p><h2 id="login-title">{captain?'Captain login':register?'Create an account':'Passenger login'}</h2>
+      <p className="login-pending">{captain?'Use your administrator-provisioned driver account.':'Sign in to request and track rides through the backend.'}</p>
+      <form onSubmit={submit}>{register&&!captain&&<><label htmlFor="name">Full name</label><input id="name" name="name" required minLength={2} maxLength={100} autoComplete="name" disabled={busy}/></>}
+        <label htmlFor="email">Email address</label><input id="email" name="email" type="email" required autoComplete="username" placeholder="you@example.com" disabled={busy}/>
+        <label htmlFor="password">Password</label><input id="password" name="password" type="password" required minLength={register?8:1} autoComplete={register?'new-password':'current-password'} disabled={busy}/>
+        {error&&<p role="alert" className="ride-error">{error}</p>}
+        <button type="submit" disabled={busy}>{busy?'Connecting…':register&&!captain?'Create account':'Sign in'} <span><Arrow/></span></button>
       </form>
-      <p id="auth-note" className="cinema-note">{captain?'A captain dashboard and driver authentication are not yet connected.':'Passenger authentication is not yet connected.'} No credentials are collected or stored.</p>
-      {!captain&&<Link className="cinema-text-link" to="/book">Explore booking demo <span><Arrow/></span></Link>}
-      <Link className="login-switch" to={captain?'/login/passenger':'/login/captain'}>{captain?'Looking for a ride? Passenger login':'Driving with us? Captain login'} <Arrow/></Link>
+      {!captain&&<button className="auth-switch" onClick={()=>{setRegister(!register);setError('');}} disabled={busy}>{register?'Already registered? Sign in':'New passenger? Create an account'}</button>}
+      {!captain&&<Link className="cinema-text-link" to="/book" onClick={()=>{if(!state.ride)state.setMode('simulation');}}>Explore the simulation <Arrow/></Link>}
+      <Link className="login-switch" to={captain?'/login/passenger':'/login/captain'} onClick={()=>{setRegister(false);setError('');}}>{captain?'Passenger login':'Captain login'} <Arrow/></Link>
       <Link className="login-switch" to="/">Back to the journey</Link>
-    </section>
-  </main></div>;
+    </section></main></div>;
 }

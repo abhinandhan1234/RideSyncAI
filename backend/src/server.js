@@ -2,22 +2,24 @@ import 'dotenv/config';
 import http from 'node:http';
 import { createApp } from './app.js';
 import { attachSockets } from './sockets/index.js';
-import { expireOffers } from './services/matching/dispatch.js';
+import { expireOffers, drainDispatch } from './services/matching/dispatch.js';
 import mongoose from 'mongoose';
 import { connectDB } from './config/database.js';
 import { initializeBookingModels } from './models/booking.js';
 import { BookingService, startBookingWorker } from './services/booking.js';
 
+const demoEnabled = process.env.ENABLE_BOOKING_DEMO === 'true';
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('Set JWT_SECRET to at least 32 random characters');
 await connectDB();
 const hello = await mongoose.connection.db.admin().command({ hello: 1 });
-if (!hello.setName && hello.msg !== 'isdbgrid') {
+if (demoEnabled && !hello.setName && hello.msg !== 'isdbgrid') {
   await mongoose.disconnect();
   throw new Error('Booking requires MongoDB replica set or Atlas for atomic transactions');
 }
-await initializeBookingModels();
+if (demoEnabled) await initializeBookingModels();
 const service = new BookingService();
 const app = createApp(service);
-const stopWorker = startBookingWorker(service);
+const stopWorker = demoEnabled ? startBookingWorker(service) : () => {};
 
 const PORT = process.env.PORT || 5002;
 
@@ -40,7 +42,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
   stopWorker();
   clearInterval(expiryTimer);
   io.close();
-  server.close(async () => { await mongoose.disconnect(); process.exit(0); });
+  server.close(async () => { await drainDispatch(); await mongoose.disconnect(); process.exit(0); });
 });
 
 export default server;

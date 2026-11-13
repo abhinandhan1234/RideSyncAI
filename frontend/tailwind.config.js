@@ -8,15 +8,15 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary: '#0B0F14',
-          secondary: '#111827',
-          deep: '#07090D',
+          primary: 'rgb(var(--color-ink) / <alpha-value>)',
+          secondary: 'rgb(var(--color-slate) / <alpha-value>)',
+          deep: 'rgb(var(--color-ink) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#F59E0B',
-          hover: '#D97706',
-          light: '#FBBF24',
-          glow: 'rgba(245, 158, 11, 0.25)',
+          DEFAULT: 'rgb(var(--color-sea) / <alpha-value>)',
+          hover: 'rgb(var(--color-paper) / <alpha-value>)',
+          light: 'rgb(var(--color-paper) / <alpha-value>)',
+          glow: 'rgba(168, 197, 191, 0.25)',
         },
         glass: {
           surface: 'rgba(255, 255, 255, 0.08)',
@@ -24,13 +24,13 @@ export default {
           'surface-active': 'rgba(255, 255, 255, 0.16)',
           border: 'rgba(255, 255, 255, 0.14)',
           'border-hover': 'rgba(255, 255, 255, 0.24)',
-          'border-active': 'rgba(245, 158, 11, 0.5)',
-          nav: 'rgba(15, 23, 42, 0.65)',
+          'border-active': 'rgba(168, 197, 191, 0.5)',
+          nav: 'rgba(38, 59, 67, 0.65)',
         },
         text: {
-          primary: '#F8FAFC',
-          secondary: '#94A3B8',
-          muted: '#64748B',
+          primary: 'rgb(var(--color-paper) / <alpha-value>)',
+          secondary: '#A5B5B8',
+          muted: 'rgb(var(--color-muted) / <alpha-value>)',
         }
       },
       fontFamily: {
@@ -45,8 +45,8 @@ export default {
         'glass-sm': '0 4px 16px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)',
         'glass-md': '0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.15)',
         'glass-lg': '0 16px 48px 0 rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)',
-        'accent-glow': '0 0 25px rgba(245, 158, 11, 0.4)',
-        'accent-pill': '0 0 15px rgba(245, 158, 11, 0.35)',
+        'accent-glow': '0 0 25px rgba(168, 197, 191, 0.4)',
+        'accent-pill': '0 0 15px rgba(168, 197, 191, 0.35)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

@@ -104,7 +104,7 @@ export default function AdminDashboard() {
   );
 
   return (
-    <section className="max-w-6xl mx-auto space-y-6 pb-12">
+    <section className="admin-dashboard max-w-6xl mx-auto space-y-6 pb-12">
       {/* Top Page Heading per UI Designer tokens */}
       <div className="page-heading">
         <div>
@@ -114,8 +114,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Action Controls using ride-segment design */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="ride-segment" aria-label="Admin navigation tabs">
+        <div className="admin-heading-controls flex flex-wrap items-center gap-3">
+          <div className="ride-segment admin-navigation" aria-label="Admin navigation tabs">
             <button type="button" aria-pressed="true" className="text-xs font-semibold">
               Overview
             </button>

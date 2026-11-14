@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import {Link,useNavigate} from 'react-router-dom';
+import {io} from 'socket.io-client';
 import PublicNav from '../../components/cinematic/PublicNav';
 import {useRide} from '../../context/RideContext';
 import {apiRequest} from '../../services/api';
@@ -70,8 +71,38 @@ export function SarathiProfile(){
   return <SarathiShell><header className="sarathi-page-heading"><div><p className="sarathi-eyebrow">ACCOUNT DETAILS</p><h1>Your Sarathi profile</h1><p>Update your contact details, vehicle and payment receiving information.</p></div><StatusPill>{d.approvalStatus||'INCOMPLETE'}</StatusPill></header><Flash error={error} notice={notice}/>{(profilePhotoError||vehiclePhotoError)&&<p role="alert" className="sarathi-alert">{[profilePhotoError,vehiclePhotoError].filter(Boolean).join(" ")}</p>}<form className="sarathi-card sarathi-edit-form" onSubmit={submit}><h2>Personal information</h2><div className="sarathi-form-grid"><Field label="Full name" name="fullName" defaultValue={data?.user?.name} /><Field label="Phone number" name="phone" defaultValue={data?.user?.phone} /><Field label="Email address" name="email" defaultValue={data?.user?.email}/><Field label="Residential address" name="address" required defaultValue={personal.address}/><Field label="City" name="city" required defaultValue={personal.city}/></div><div className="sarathi-photo-grid"><PhotoField label="Replace profile photo" name="profilePhoto" value={profilePhoto?.preview||(!profilePhoto?.remove?personal.photoUrl:null)} onChange={onProfilePhoto} onRemove={()=>setProfilePhoto({remove:true})} capture="user"/><PhotoField label="Replace vehicle photo" name="vehiclePhoto" value={vehiclePhoto?.preview||(!vehiclePhoto?.remove?v.photoUrl:null)} onChange={onVehiclePhoto} onRemove={()=>setVehiclePhoto({remove:true})}/></div><h2>Vehicle information</h2><div className="sarathi-form-grid"><Field label="Category" name="vehicleCategory"><select name="vehicleCategory" defaultValue={v.type||'BIKE'}>{vehicleTypes.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></Field><Field label="Manufacturer" name="manufacturer" required defaultValue={v.manufacturer}/><Field label="Model" name="model" required defaultValue={v.model}/><Field label="Registration number" name="registrationNumber" required defaultValue={v.plate}/><Field label="Colour" name="vehicleColor" defaultValue={v.color}/><Field label="RC details" name="vehicleRcDetails" defaultValue={v.rcDetails}/></div><h2>Payment receiving</h2><div className="sarathi-form-grid"><Field label="UPI ID" name="upiId" defaultValue={p.upiId} placeholder="name@bank"/><Field label="UPI account holder" name="upiAccountHolder" defaultValue={p.accountHolderName}/><Field label="Preferred method" name="preferredPaymentMethod"><select name="preferredPaymentMethod" defaultValue={p.preferredMethod||'UPI'}><option value="UPI">UPI</option><option value="CASH">Cash</option><option value="BOTH">UPI and cash</option></select></Field></div><button className="sarathi-primary" disabled={busy}>{busy?'Saving…':'Save profile'}</button></form></SarathiShell>;
 }
 
+function playNotificationChime(){
+  try{
+    const AudioContext=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContext)return;
+    const ctx=new AudioContext();
+    const now=ctx.currentTime;
+    const osc1=ctx.createOscillator();
+    const gain1=ctx.createGain();
+    osc1.type='sine';
+    osc1.frequency.setValueAtTime(587.33,now);
+    gain1.gain.setValueAtTime(0.2,now);
+    gain1.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now+0.35);
+
+    const osc2=ctx.createOscillator();
+    const gain2=ctx.createGain();
+    osc2.type='sine';
+    osc2.frequency.setValueAtTime(880,now+0.18);
+    gain2.gain.setValueAtTime(0.25,now+0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.001,now+0.65);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now+0.18);
+    osc2.stop(now+0.65);
+  }catch{}
+}
+
 export function SarathiDashboard(){
-  const {auth}=useRide(),navigate=useNavigate();const [data,setData]=useState(null),[offers,setOffers]=useState([]),[activeRide,setActiveRide]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[manualLocation,setManualLocation]=useState({latitude:'',longitude:''});
+  const {auth}=useRide(),navigate=useNavigate();const [data,setData]=useState(null),[offers,setOffers]=useState([]),[incomingOffer,setIncomingOffer]=useState(null),[secondsRemaining,setSecondsRemaining]=useState(30),[activeRide,setActiveRide]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[manualLocation,setManualLocation]=useState({latitude:'',longitude:''});
   const isDriver=String(auth?.user?.role||'').toLowerCase()==='driver';
   const refresh=useCallback(async(signal)=>{
     if(!auth?.accessToken)return;
@@ -86,18 +117,53 @@ export function SarathiDashboard(){
       const result=await apiRequest('/driver/offers',{token:auth.accessToken,signal});
       const detailed=await Promise.all((result.offers||[]).map(async offer=>{try{return {...offer,ride:await apiRequest(`/rides/${offer.rideId}`,{token:auth.accessToken,signal})};}catch{return offer;}}));
       setOffers(detailed);
+      if(detailed.length>0&&!incomingOffer&&!currentRide){
+        setIncomingOffer(detailed[0]);
+      }
     }catch{}
     setError('');
-  },[auth]);
+  },[auth,incomingOffer]);
   useEffect(()=>{if(!isDriver)return;let timer,active=true;const controller=new AbortController();const poll=async()=>{try{await refresh(controller.signal);}catch(e){if(active&&e.name!=='AbortError')setError(e.message);}finally{if(active&&!controller.signal.aborted)timer=setTimeout(poll,3000);}};void poll();return()=>{active=false;controller.abort();clearTimeout(timer);};},[isDriver,refresh]);
+
+  useEffect(()=>{
+    if(!isDriver||!auth?.accessToken)return;
+    const socket=io(import.meta.env.VITE_SOCKET_URL||location.origin,{auth:{token:auth.accessToken}});
+    socket.on('ride:offer',offer=>{
+      playNotificationChime();
+      setIncomingOffer(offer);
+      setOffers(prev=>{
+        const id=offer.offerId||offer._id;
+        const exists=prev.some(o=>(o.offerId||o._id)===id);
+        return exists?prev:[offer,...prev];
+      });
+    });
+    return ()=>socket.disconnect();
+  },[isDriver,auth?.accessToken]);
+
+  useEffect(()=>{
+    if(!incomingOffer)return;
+    const expires=incomingOffer.expiresAt?new Date(incomingOffer.expiresAt).getTime():Date.now()+30000;
+    const updateTime=()=>{
+      const left=Math.max(0,Math.round((expires-Date.now())/1000));
+      setSecondsRemaining(left);
+      if(left===0){
+        setIncomingOffer(null);
+      }
+    };
+    updateTime();
+    const interval=setInterval(updateTime,1000);
+    return ()=>clearInterval(interval);
+  },[incomingOffer]);
+
   if(!isDriver)return <SarathiShell><AuthRequired navigate={navigate}/></SarathiShell>;
   if(!data)return <SarathiShell><article className="sarathi-card" role="status">{error?<Flash error={error}/>:'Loading your Sarathi profile…'}</article></SarathiShell>;
   const driver=data?.driver||emptyProfile,user=data?.user||auth.user,v=driver.vehicle||{},verification=driver.verification||{},next={ACCEPTED:'ARRIVING',ARRIVING:'ARRIVED',ARRIVED:'ONGOING',ONGOING:'COMPLETED'}[activeRide?.status];
   async function setAvailability(availability){setBusy(true);setError('');setNotice('');try{let location={};if(availability==='ONLINE'){let coords=null;if(navigator.geolocation)coords=await new Promise(resolve=>navigator.geolocation.getCurrentPosition(({coords:c})=>resolve(c),()=>resolve(null),{enableHighAccuracy:true,timeout:12000,maximumAge:5000}));const latitude=coords?.latitude??(manualLocation.latitude.trim()?Number(manualLocation.latitude):NaN),longitude=coords?.longitude??(manualLocation.longitude.trim()?Number(manualLocation.longitude):NaN);if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw new Error('Allow location access or enter valid latitude and longitude.');location={latitude,longitude};}const result=await apiRequest('/sarathi/availability',{method:'PATCH',token:auth.accessToken,body:{availability,...location}});setNotice(`You are ${result.availability.toLowerCase()}.`);await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
-  async function respond(offer,action){setBusy(true);setError('');try{const result=await apiRequest(`/offers/${offer._id}/respond`,{method:'POST',token:auth.accessToken,body:{action}});if(action==='accept')setActiveRide({...offer.ride,...result});setNotice(action==='accept'?'Ride accepted. Follow the trip steps below.':'Ride request declined.');await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
+  async function respond(offer,action){setBusy(true);setError('');try{const offerId=offer._id||offer.offerId;const result=await apiRequest(`/offers/${offerId}/respond`,{method:'POST',token:auth.accessToken,body:{action}});setIncomingOffer(null);setOffers(prev=>prev.filter(o=>(o._id||o.offerId)!==offerId));if(action==='accept')setActiveRide({...offer.ride,...result,status:'ACCEPTED'});setNotice(action==='accept'?'Ride accepted. Follow the trip steps below.':'Ride request declined.');await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
   async function advanceRide(){if(!activeRide||!next)return;setBusy(true);setError('');try{const result=await apiRequest(`/rides/${activeRide.rideId}/status`,{method:'PATCH',token:auth.accessToken,body:{status:next}});setActiveRide({...activeRide,status:result.newStatus});setNotice(`Ride status: ${result.newStatus.toLowerCase()}.`);await refresh();}catch(e){setError(e.message);}finally{setBusy(false);}}
   const availability=driver.availability||'OFFLINE';const statusKind=driver.approvalStatus==='APPROVED'?'verified':'pending';
   return <SarathiShell><header className="sarathi-page-heading"><div><p className="sarathi-eyebrow">SARATHI CAPTAIN PORTAL</p><h1>Hello, {user.name||'Captain'}.</h1><p>Your driver workspace and ride requests.</p></div><StatusPill kind={statusKind}>{(driver.approvalStatus||'INCOMPLETE').replaceAll('_',' ')}</StatusPill></header><Flash error={error} notice={notice}/>
+    {incomingOffer&&<div className="sarathi-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="incoming-booking-title"><div className="sarathi-incoming-modal"><div className="sarathi-modal-radar-bar"/><div className="sarathi-modal-top"><span className="sarathi-modal-badge"><span className="sarathi-beacon-dot"/>New Booking Request</span><span style={{color:'#38bdf8',fontSize:'12px',fontWeight:700}}>⏱ {secondsRemaining}s left</span></div><div style={{marginBottom:'16px'}}><p className="sarathi-eyebrow" style={{marginBottom:'4px'}}>PASSENGER DETAILS</p><h2 id="incoming-booking-title" style={{fontSize:'22px',margin:'0 0 4px',color:'var(--theme-paper)'}}>{incomingOffer.ride?.passengerName||incomingOffer.passengerName||'Yatri'}</h2><p style={{fontSize:'12px',color:'var(--text-secondary)',margin:0}}>{incomingOffer.ride?.passengerCount||incomingOffer.passengerCount||1} {(incomingOffer.ride?.passengerCount||incomingOffer.passengerCount||1)===1?'Passenger':'Passengers'}{(incomingOffer.ride?.passengerPhone||incomingOffer.passengerPhone)?` · 📞 ${incomingOffer.ride?.passengerPhone||incomingOffer.passengerPhone}`:''}</p></div><div className="sarathi-modal-route"><div className="sarathi-route-point"><div className="sarathi-point-dot pickup"/><div className="sarathi-point-text"><span>PICKUP LOCATION</span><strong>{incomingOffer.ride?.pickupAddress||incomingOffer.pickupAddress||'Belagavi Pickup'}</strong></div></div><div className="sarathi-route-point"><div className="sarathi-point-dot dropoff"/><div className="sarathi-point-text"><span>DESTINATION</span><strong>{incomingOffer.ride?.dropoffAddress||incomingOffer.dropoffAddress||'Belagavi Destination'}</strong></div></div></div><div className="sarathi-modal-stats"><div className="sarathi-stat-box"><span>Estimated Fare</span><strong>₹{incomingOffer.ride?.fareEstimate||incomingOffer.fareEstimate||'80'}</strong></div><div className="sarathi-stat-box"><span>Pickup ETA</span><strong>{incomingOffer.estimatedPickupMin||2} min</strong></div></div><div className="sarathi-timer-bar-wrap"><div className="sarathi-timer-label"><span>Decision window</span><span>{secondsRemaining}s</span></div><div className="sarathi-timer-track"><div className="sarathi-timer-fill" style={{width:`${Math.min(100,Math.max(0,(secondsRemaining/30)*100))}%`}}/></div></div><div className="sarathi-modal-actions"><button type="button" className="sarathi-btn-reject" disabled={busy} onClick={()=>respond(incomingOffer,'reject')}>✕ Decline</button><button type="button" className="sarathi-btn-accept" disabled={busy} onClick={()=>respond(incomingOffer,'accept')}>✓ Accept Booking</button></div></div></div>}
     <section className="sarathi-dashboard-grid"><article className="sarathi-card sarathi-driver-summary"><div className="sarathi-avatar">{driver.profile?.photoUrl?<img src={driver.profile.photoUrl} alt="Sarathi profile"/>:<span>{(user.name||'S').slice(0,1).toUpperCase()}</span>}</div><div><p className="sarathi-eyebrow">YOUR PROFILE</p><h2>{user.name}</h2><p>{user.phone}</p><p>{v.manufacturer} {v.model} · {v.plate||'Vehicle details pending'}</p><Link to="/sarathi/profile" className="sarathi-inline-link">Edit profile →</Link></div></article>
       <article className="sarathi-card sarathi-availability"><div><p className="sarathi-eyebrow">AVAILABILITY</p><h2><span className={`availability-dot ${availability.toLowerCase()}`}/>{activeRide?.status==='ONGOING'?'ON TRIP':availability}</h2><p>{activeRide?'An active ride is in progress.':driver.approvalStatus==='PENDING_REVIEW'?'Your application is pending review.':'Switch online to receive ranked ride offers.'}</p><div className="sarathi-manual-location"><label className="sarathi-field"><span>Latitude (if device location is unavailable)</span><input type="number" step="any" min="-90" max="90" inputMode="decimal" value={manualLocation.latitude} onChange={event=>setManualLocation(value=>({...value,latitude:event.target.value}))} placeholder="15.8497"/></label><label className="sarathi-field"><span>Longitude</span><input type="number" step="any" min="-180" max="180" inputMode="decimal" value={manualLocation.longitude} onChange={event=>setManualLocation(value=>({...value,longitude:event.target.value}))} placeholder="74.4977"/></label></div><p className="sarathi-form-note">Use your current GPS when available. Manual coordinates must be inside a supported Belagavi service zone.</p></div><div className="sarathi-button-row"><button className="sarathi-primary" disabled={busy||!!activeRide} onClick={()=>setAvailability('ONLINE')}>Go online</button><button className="sarathi-secondary" disabled={busy||!!activeRide||availability==='OFFLINE'} onClick={()=>setAvailability('OFFLINE')}>Go offline</button></div></article>
       <article className="sarathi-card"><div className="sarathi-card-title"><div><p className="sarathi-eyebrow">DOCUMENTS</p><h2>Verification progress</h2></div><Link to="/sarathi/verification" className="sarathi-inline-link">Manage →</Link></div><div className="sarathi-status-row"><span>Aadhaar</span><StatusPill kind={verification.aadhaar?.status==='VERIFIED'?'verified':verification.aadhaar?.status==='DEMO_VERIFIED'?'demo':'pending'}>{verification.aadhaar?.status||'NOT STARTED'}</StatusPill></div><div className="sarathi-status-row"><span>Driving Licence</span><StatusPill kind={verification.drivingLicense?.status==='VERIFIED'?'verified':verification.drivingLicense?.status==='DEMO_VERIFIED'?'demo':'pending'}>{verification.drivingLicense?.status||'NOT STARTED'}</StatusPill></div></article>

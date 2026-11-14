@@ -12,7 +12,19 @@ try {
   const uri = mongo.getUri('ridesync_disposable_demo');
   await mongoose.connect(uri);
   await initializeBookingModels();
-  await Zone.updateOne({code:'Z01'}, {$setOnInsert:{code:'Z01',name:'Belagavi demo zone',center:{type:'Point',coordinates:[74.4977,15.8497]}}}, {upsert:true});
+  const demoZones = [
+    { code: 'Z01', name: 'Railway Station', center: { type: 'Point', coordinates: [74.507, 15.850] } },
+    { code: 'Z02', name: 'Central Bus Stand', center: { type: 'Point', coordinates: [74.510, 15.860] } },
+    { code: 'Z03', name: 'Tilakwadi', center: { type: 'Point', coordinates: [74.507, 15.836] } },
+    { code: 'Z04', name: 'Udyambag', center: { type: 'Point', coordinates: [74.505, 15.816] } },
+    { code: 'Z05', name: 'Nehru Nagar / KLE', center: { type: 'Point', coordinates: [74.516, 15.887] } },
+    { code: 'Z06', name: 'Shahapur', center: { type: 'Point', coordinates: [74.520, 15.839] } },
+    { code: 'Z07', name: 'Camp', center: { type: 'Point', coordinates: [74.493, 15.852] } },
+    { code: 'Z08', name: 'Machhe / VTU', center: { type: 'Point', coordinates: [74.472, 15.812] } }
+  ];
+  for (const z of demoZones) {
+    await Zone.updateOne({ code: z.code }, { $set: z }, { upsert: true });
+  }
   await Driver.create([1,2,3].map(n=>({driverId:`D00${n}`,name:`Synthetic Driver ${n}`,isSynthetic:true,
     location:{type:'Point',coordinates:[74.4977+n*0.001,15.8497]},vehicle:{plate:`DEMO-${n}`,capacity:4},zoneCode:'Z01'})));
 

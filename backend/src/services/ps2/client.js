@@ -6,8 +6,12 @@ import { createInterface } from 'node:readline';
 const local = fileURLToPath(new URL('../../../../ai-engine/validation/.venv/bin/python',import.meta.url));
 const script = fileURLToPath(new URL('./worker.py',import.meta.url));
 let worker;
+const defaultPython = process.platform === 'win32'
+  ? (existsSync('C:\\Python314\\python.exe') ? 'C:\\Python314\\python.exe' : 'python')
+  : 'python3';
 function start() {
-  const child = spawn(process.env.PS2_PYTHON || (existsSync(local) ? local : 'python3'), ['-B',script],
+  const pythonBin = process.env.PS2_PYTHON || (existsSync(local) ? local : defaultPython);
+  const child = spawn(pythonBin, ['-B',script],
     {stdio:['pipe','pipe','inherit'],env:{...process.env,OMP_NUM_THREADS:'1'}});
   const queue = [];
   const state = {child,queue};

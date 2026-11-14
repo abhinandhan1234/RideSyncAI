@@ -4,7 +4,10 @@ from functools import lru_cache
 from pathlib import Path
 import math
 import sys
-import h3
+try:
+    import h3
+except Exception:
+    h3 = None
 import numpy as np
 import networkx as nx
 from scipy.sparse.csgraph import dijkstra

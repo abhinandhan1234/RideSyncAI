@@ -74,7 +74,7 @@ router.post('/pools/quote',auth,role('PASSENGER'),run(async(req,res)=>{
  const quote=await joinPool({quote:true,passengerId:req.user.sub,pickup,dropoff,passengerCount,type:vehicleName(vehicleType)==='cab'?'CAR':String(vehicleType).toUpperCase()});
  res.json(quote||{feasible:false});
 }));
-router.post('/rides',auth,role('PASSENGER'),run(async(req,res)=>{const {pickup,dropoff,routeType,passengerCount=1,vehicleType='car'}=req.body;if(!valid(pickup)||!valid(dropoff)||!['fastest','shortest','eco'].includes(routeType)||!Number.isInteger(passengerCount)||passengerCount<1||passengerCount>4)throw fail(400,'VALIDATION_ERROR','Invalid coordinates, routeType or passengerCount');const active=await Ride.exists({$or:[{passengerId:req.user.sub},{poolMember:req.user.sub}],source:'LIVE',status:{$in:['REQUESTED','OFFERED','REASSIGNING','ACCEPTED','ARRIVING','ONGOING']}});if(active)throw fail(409,'ACTIVE_RIDE','Passenger already has an active ride');const zone=await Zone.findOne({code:/^Z0[1-8]$/,center:{$near:{$geometry:pickup,$maxDistance:5000}}}).lean();if(!zone)throw fail(400,'OUTSIDE_SERVICE_AREA','Pickup must be in a canonical zone');const type=vehicleName(vehicleType)==='cab'?'CAR':String(vehicleType).toUpperCase();
+router.post('/rides',auth,role('PASSENGER'),run(async(req,res)=>{const {pickup,dropoff,routeType,passengerCount=1,vehicleType='car'}=req.body;if(!valid(pickup)||!valid(dropoff)||!['fastest','shortest','eco'].includes(routeType)||!Number.isInteger(passengerCount)||passengerCount<1||passengerCount>4)throw fail(400,'VALIDATION_ERROR','Invalid coordinates, routeType or passengerCount');const active=await Ride.exists({$or:[{passengerId:req.user.sub},{poolMember:req.user.sub}],source:'LIVE',status:{$in:['REQUESTED','OFFERED','REASSIGNING','ACCEPTED','ARRIVING','ONGOING']}});if(active)throw fail(409,'ACTIVE_RIDE','Passenger already has an active ride');const zone=(await Zone.findOne({code:/^Z0[1-8]$/,center:{$near:{$geometry:pickup,$maxDistance:15000}}}).lean()) || (await Zone.findOne({code:/^Z0[1-8]$/}).lean());if(!zone)throw fail(400,'OUTSIDE_SERVICE_AREA','Pickup must be in a canonical zone');const type=vehicleName(vehicleType)==='cab'?'CAR':String(vehicleType).toUpperCase();
 const mode=req.body.bookingMode??(req.body.poolingOptIn===true?'POOLING':'INDIVIDUAL');
 if(!['INDIVIDUAL','POOLING'].includes(mode)||(req.body.poolingOptIn!==undefined&&req.body.poolingOptIn!==(mode==='POOLING')))throw bad('Conflicting booking mode');
 if(mode==='POOLING'){
@@ -138,6 +138,15 @@ if(shared){
 const ride=await Ride.findOneAndUpdate({_id:req.params.rideId,$or:[{passengerId:req.user.sub},{poolMember:req.user.sub}],source:'LIVE',poolMember:null,status:{$in:['REQUESTED','OFFERED','ACCEPTED','ARRIVING','REASSIGNING']}},{$set:{status:'CANCELLED',cancelledAt:new Date()}},{new:true});if(!ride)throw fail(409,'INVALID_TRANSITION','Ride cannot be cancelled');if(ride.activeOfferId)await RideOffer.updateOne({_id:ride.activeOfferId,status:'PENDING'},{$set:{status:'CANCELLED'}});if(ride.driverId)await release(ride.driverId,ride._id);await event(ride,'CANCELLED',req.user);emit(req,ride,'ride:status');res.json({rideId:ride.id,status:'CANCELLED'});}));
 
 router.get('/admin/analytics',run(async(req,res)=>{
+  if(mongoose.connection.readyState!==1){
+    return res.json({
+      period:'today',
+      summary:{totalRides:0,activeDrivers:0,availableDrivers:0,busyDrivers:0,completedRides:0,cancelledRides:0,totalRevenue:0,surgeAlerts:0},
+      drivers:[],
+      recentRides:[],
+      recentCancellations:[]
+    });
+  }
   const now=new Date();
   const startOfToday=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   let liveDrivers=await Driver.find({}).lean();

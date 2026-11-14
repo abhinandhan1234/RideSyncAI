@@ -100,14 +100,24 @@ export function RideProvider({children}) {
     }});
     return ()=>{active=false;socket.disconnect();};
   },[auth,mode,ride?.rideId]);
-  async function book(){
+  async function book(opts={}){
     if(submitting.current)return false;
     setError('');
     if(!route){setError('Select pickup and drop-off and wait for the road route.');return false;}
     if(mode==='simulation'){setSimulation({phase:'searching',percent:0});return true;}
     if(auth?.user.role!=='passenger'){setError('Sign in as a Yatri to book through the backend.');return false;}
     submitting.current=true;setBusy(true);
-    try{const created=await apiRequest('/rides',{method:'POST',token:auth.accessToken,body:{...bookingPayload({pickup,dropoff,routeType,passengerCount}),bookingMode,...(bookingMode==='POOLING'&&quote?.rideId?{poolRideId:quote.rideId}:{})}});setRide(created);return created;}
+    try{
+      const payload={
+        ...bookingPayload({pickup,dropoff,routeType,passengerCount}),
+        bookingMode,
+        ...(bookingMode==='POOLING'&&quote?.rideId?{poolRideId:quote.rideId}:{}),
+        ...(opts?.preferredDriverId?{preferredDriverId:opts.preferredDriverId}:{})
+      };
+      const created=await apiRequest('/rides',{method:'POST',token:auth.accessToken,body:payload});
+      setRide(created);
+      return created;
+    }
     catch(e){setError(e.message);return false;}finally{submitting.current=false;setBusy(false);}
   }
   async function loadRide(rideId){

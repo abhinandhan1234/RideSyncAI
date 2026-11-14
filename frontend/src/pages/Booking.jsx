@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowUpDown, LocateFixed, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowUpDown, LocateFixed, MapPin, UserCheck, Zap } from 'lucide-react';
 import { useRide } from '../context/RideContext';
 import RideMap from '../components/maps/RideMap';
 import LocationAutocomplete from '../components/maps/LocationAutocomplete';
@@ -18,6 +18,31 @@ function CoordinateFields({label,value,onChange,disabled}){
 export default function Booking(){
   const state=useRide(),navigate=useNavigate();const [selection,setSelection]=useState('pickup'),[locationError,setLocationError]=useState(''),[locating,setLocating]=useState(false),[advanced,setAdvanced]=useState(false);
   const [sheetOpen,setSheetOpen]=useState(true);
+  const [nearbyDrivers,setNearbyDrivers]=useState([]);
+  const [selectedDriverId,setSelectedDriverId]=useState('');
+  const [loadingDrivers,setLoadingDrivers]=useState(false);
+
+  useEffect(()=>{
+    if(state.mode!=='backend'||!state.auth?.accessToken||!validLocation(state.pickup)){
+      setNearbyDrivers([]);
+      setSelectedDriverId('');
+      return;
+    }
+    let active=true;
+    setLoadingDrivers(true);
+    const controller=new AbortController();
+    apiRequest(`/drivers/nearby?lat=${state.pickup.lat}&lng=${state.pickup.lng}&passengerCount=${state.passengerCount}`,{
+      token:state.auth.accessToken,
+      signal:controller.signal
+    }).then(res=>{
+      if(active)setNearbyDrivers(res.drivers||[]);
+    }).catch(()=>{
+      if(active)setNearbyDrivers([]);
+    }).finally(()=>{
+      if(active)setLoadingDrivers(false);
+    });
+    return ()=>{active=false;controller.abort();};
+  },[state.pickup,state.passengerCount,state.mode,state.auth?.accessToken]);
   async function reverse(at){
     try{const result=await apiRequest(`/locations/reverse?lat=${at.lat}&lon=${at.lng}`);return {...at,name:result.location.name,address:result.location.address};}
     catch{return {...at,name:`Map pin ${at.lat.toFixed(5)}, ${at.lng.toFixed(5)}`,address:'Selected from the map'};}
@@ -53,8 +78,34 @@ export default function Booking(){
       <label className="booking-label">Yatris<select value={state.passengerCount} disabled={state.locked} onChange={e=>state.setPassengerCount(Number(e.target.value))}>{[1,2,3,4].map(n=><option key={n} value={n}>{n} {n===1?'Yatri':'Yatris'}</option>)}</select></label>
       {state.routeLoading&&<p role="status" className="booking-explainer">Finding a road route…</p>}{state.routeError&&<p role="alert" className="ride-error">{state.routeError}</p>}
       {state.route&&<div className="route-summary"><div><span>Pickup</span><strong>{state.pickup?.name||'—'}</strong></div><div><span>Drop-off</span><strong>{state.dropoff?.name||'—'}</strong></div><div><span>Distance</span><strong>{state.route.km.toFixed(2)} km</strong></div><div><span>Estimated duration</span><strong>{Math.ceil(state.route.minutes)} min</strong></div><div><span>Estimated fare</span><strong>₹{(40+12*state.route.km+2*Math.ceil(state.route.minutes)).toFixed(2)}</strong></div><p>{state.route.source==='ESTIMATE_ONLY'?'Estimate only. Road coverage unavailable.':state.mode==='simulation'?'OSRM road estimate.':'Road-network estimate. Surge is applied at booking.'}</p></div>}
+      {state.mode==='backend'&&state.auth?.user?.role==='passenger'&&state.route&&<div className="driver-selection-section">
+        <label className="booking-label">Choose your Sarathi Captain</label>
+        <div className="driver-cards-list">
+          <button type="button" className={`driver-card ${!selectedDriverId?'selected':''}`} onClick={()=>setSelectedDriverId('')}>
+            <div className="driver-card-avatar"><Zap size={18} className="text-accent"/></div>
+            <div className="driver-card-info">
+              <div className="driver-name-row">
+                <strong>Auto-Dispatch (Fastest)</strong>
+                <span className="driver-badge-recommended">Recommended</span>
+              </div>
+              <p>Instant dispatch with the closest available Belagavi captain</p>
+            </div>
+          </button>
+          {nearbyDrivers.map(d=><button key={d.driverId} type="button" className={`driver-card ${selectedDriverId===d.driverId?'selected':''}`} onClick={()=>setSelectedDriverId(d.driverId)}>
+            <div className="driver-card-avatar"><UserCheck size={18} className="text-accent"/></div>
+            <div className="driver-card-info">
+              <div className="driver-name-row">
+                <strong>{d.name}</strong>
+                <span className="driver-rating">★ {Number(d.rating||4.9).toFixed(1)}</span>
+              </div>
+              <p>{d.vehicle?.model||d.vehicle?.type||'Sarathi'} · {d.distanceKm} km away ({d.estimatedEtaMin} min pickup)</p>
+            </div>
+          </button>)}
+          {!loadingDrivers&&nearbyDrivers.length===0&&<p className="booking-explainer" style={{fontSize:'11px',margin:'6px 0'}}>No individual captains nearby right now; Auto-dispatch will match the next available driver.</p>}
+        </div>
+      </div>}
       {state.error&&<p role="alert" className="ride-error">{state.error}</p>}
-      {pending?<><p role="status" className="booking-explainer">{state.mode==='simulation'?`Simulation: ${state.simulation.phase}`:`Ride status: ${state.ride.status}`}</p><GlassButton variant="primary" fullWidth onClick={()=>navigate(state.mode==='simulation'?'/track':`/ride/${state.ride.rideId}`)}>View tracking</GlassButton></>:<GlassButton variant="primary" fullWidth disabled={!canBook||state.quoting||Boolean(state.quote?.error)||(state.mode==='backend'&&state.auth?.user.role!=='passenger')} loading={state.busy} onClick={async()=>{const booked=await state.book();if(booked)navigate(state.mode==='backend'?`/ride/${booked.rideId}`:'/track');}}>{state.mode==='simulation'?'Start demo ride':state.quote?.rideId?'Join pool':'Book Your Ride'}</GlassButton>}
+      {pending?<><p role="status" className="booking-explainer">{state.mode==='simulation'?`Simulation: ${state.simulation.phase}`:`Ride status: ${state.ride.status}`}</p><GlassButton variant="primary" fullWidth onClick={()=>navigate(state.mode==='simulation'?'/track':`/ride/${state.ride.rideId}`)}>View tracking</GlassButton></>:<GlassButton variant="primary" fullWidth disabled={!canBook||state.quoting||Boolean(state.quote?.error)||(state.mode==='backend'&&state.auth?.user.role!=='passenger')} loading={state.busy} onClick={async()=>{const booked=await state.book({preferredDriverId:selectedDriverId||undefined});if(booked)navigate(state.mode==='backend'?`/ride/${booked.rideId}`:'/track');}}>{state.mode==='simulation'?'Start demo ride':state.quote?.rideId?'Join pool':'Book Your Ride'}</GlassButton>}
     </div></GlassPanel></div>
   </section>;
 }

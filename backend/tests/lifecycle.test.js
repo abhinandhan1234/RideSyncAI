@@ -1,4 +1,6 @@
 import {test} from 'node:test';
+import WebSocket from 'ws';
+globalThis.WebSocket = WebSocket;
 import {MongoMemoryReplSet} from 'mongodb-memory-server';
 import assert from 'node:assert/strict';
 import http from 'node:http';
